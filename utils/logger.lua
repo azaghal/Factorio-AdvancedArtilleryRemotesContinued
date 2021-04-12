@@ -1,4 +1,4 @@
-  
+
 global.messages = global.messages or {}
 
 local LOG_INFO   = ""
@@ -10,16 +10,16 @@ local suppress_log = false
 
 local function _print(message, log_level)
   if suppress_log == true then return end
-  
-  local prefix = MOD_TOKEN .. ": " .. (log_level or "") 
+
+  local prefix = MOD_TOKEN .. ": " .. (log_level or "")
   local suffix = ""
-   
+
   if type(message) == "table" then
     message = {"", prefix, message}
   else
     message = prefix .. message
   end
-  
+
   game.print(message)
 end
 
@@ -29,7 +29,7 @@ _error = function(message) _print(message, LOG_ERROR) end
 
 _debug = function(message) end
 if not MOD_RELEASE then
-  _debug = function(message) 
+  _debug = function(message)
     _print(message, LOG_DEBUG)
   end
 end
