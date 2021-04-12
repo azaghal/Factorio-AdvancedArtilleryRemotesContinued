@@ -1,7 +1,7 @@
 local discovery_remote = {
   type = "capsule",
   name = "artillery-discovery-remote",
-  icon = "__AdvArtilleryRemotes__/graphics/icons/artillery-discovery-remote.png",
+  icon = "__AdvancedArtilleryRemotesContinued__/graphics/icons/artillery-discovery-remote.png",
   icon_size = 32,
   capsule_action = {
     type = "artillery-remote",
@@ -15,7 +15,7 @@ local discovery_remote = {
 local discovery_flare = {
   type = "artillery-flare",
   name = "artillery-discovery-flare",
-  icon = "__AdvArtilleryRemotes__/graphics/icons/artillery-discovery-remote.png",
+  icon = "__AdvancedArtilleryRemotesContinued__/graphics/icons/artillery-discovery-remote.png",
   icon_size = 32,
   flags = {"placeable-off-grid", "not-on-map"},
   map_color = {r=1, g=0.5, b=0},

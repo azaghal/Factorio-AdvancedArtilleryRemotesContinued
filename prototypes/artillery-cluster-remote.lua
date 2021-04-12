@@ -1,7 +1,7 @@
 local cluster_remote = {
   type = "capsule",
   name = "artillery-cluster-remote",
-  icon = "__AdvArtilleryRemotes__/graphics/icons/artillery-cluster-remote.png",
+  icon = "__AdvancedArtilleryRemotesContinued__/graphics/icons/artillery-cluster-remote.png",
   icon_size = 32,
   capsule_action = {
     type = "artillery-remote",
@@ -15,7 +15,7 @@ local cluster_remote = {
 local cluster_flare = {
   type = "artillery-flare",
   name = "artillery-cluster-flare",
-  icon = "__AdvArtilleryRemotes__/graphics/icons/artillery-cluster-remote.png",
+  icon = "__AdvancedArtilleryRemotesContinued__/graphics/icons/artillery-cluster-remote.png",
   icon_size = 32,
   flags = {"placeable-off-grid", "not-on-map"},
   map_color = {r=1, g=0.5, b=0},
@@ -42,7 +42,7 @@ local cluster_flare = {
 local test_flare = {
   type = "artillery-flare",
   name = "artillery-test-flare",
-  icon = "__AdvArtilleryRemotes__/graphics/icons/artillery-cluster-remote.png",
+  icon = "__AdvancedArtilleryRemotesContinued__/graphics/icons/artillery-cluster-remote.png",
   icon_size = 32,
   flags = {"placeable-off-grid", "not-on-map"},
   map_color = {r=0, g=0, b=1},

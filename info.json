@@ -1,11 +1,13 @@
 {
-    "name": "AdvArtilleryRemotes",
+    "name": "AdvancedArtilleryRemotesContinued",
     "version": "0.2.0",
     "title": "Advanced Artillery Remotes",
-    "author": "dockmeister",
-    "contact": "",
-    "homepage": "",
+    "author": "azaghal",
+    "homepage": "https://github.com/azaghal/Factorio-AdvancedArtilleryRemotesContinued",
     "factorio_version": "0.18",
-    "dependencies": ["base >= 0.18"],
+    "dependencies": [
+        "base >= 0.18",
+        "! AdvArtilleryRemotes"
+    ],
     "description": "Adds two Advanced Artillery Remotes to the game. Artillery Cluster Remote finds nearby spawners and worms and lays down a carpet of artillery flares. Artillery Discovery Remote spawns flares in an arc to assist in discovering new chunks."
 }

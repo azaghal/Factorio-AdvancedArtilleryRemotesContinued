@@ -2,10 +2,10 @@
 
 --]]
 
-MOD_NAME    = "AdvArtilleryRemotes"
-MOD_STRING  = "Advanced Artillery Remotes"
-MOD_TOKEN   = "AAR"
-MOD_VERSION = "0.1.0"
+MOD_NAME    = "AdvancedArtilleryRemotesContinued"
+MOD_STRING  = "Advanced Artillery Remotes Continued"
+MOD_TOKEN   = "AARU"
+MOD_VERSION = "0.2.0"
 MOD_RELEASE = true
 
 require "util"
