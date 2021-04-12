@@ -1,0 +1,10 @@
+# Ignore IDE and backup files.
+*~
+.#*
+
+# Ignore build artefacts.
+dist/
+build/
+
+# Ignore project temporary directory.
+tmp/
