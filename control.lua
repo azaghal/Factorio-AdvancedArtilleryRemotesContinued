@@ -5,7 +5,7 @@
 MOD_NAME    = "AdvancedArtilleryRemotesContinued"
 MOD_STRING  = "Advanced Artillery Remotes Continued"
 MOD_TOKEN   = "AARU"
-MOD_VERSION = "0.2.0"
+MOD_VERSION = "1.0.0"
 MOD_RELEASE = true
 
 require "util"
