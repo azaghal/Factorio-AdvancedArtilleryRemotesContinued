@@ -1,8 +1,8 @@
 # Introduction
 
-| ![](https://i.imgur.com/oG2HPGC.gif) | ![](https://i.imgur.com/pcAwZCX.gif) | ![](https://i.imgur.com/AXClB3R.gif) |
-|--------------------------------------|--------------------------------------|--------------------------------------|
-| Cluster remote                       | Discovery remote, arc radius = 30    |  Discovery remote, arc radius = 360  |
+| ![](https://azaghal.github.io/Factorio-AdvancedArtilleryRemotesContinued/demo/cluster-remote.gif) | ![](https://azaghal.github.io/Factorio-AdvancedArtilleryRemotesContinued/demo/discovery-remote-arc-radius-30.gif) | ![](https://azaghal.github.io/Factorio-AdvancedArtilleryRemotesContinued/demo/discovery-remote-arc-radius-360.gif) |
+|----------------|-----------------------------------|------------------------------------|
+| Cluster remote | Discovery remote, arc radius = 30 | Discovery remote, arc radius = 360 |
 
 **Advanced Artillery Remotes Continued** adds two additional artillery
 remotes to the game:

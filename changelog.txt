@@ -1,16 +1,22 @@
 ---------------------------------------------------------------------------------------------------
+Version: 999.999.999
+Date: 9999-99-99
+  Changes:
+  Features:
+  Bugfixes:
+---------------------------------------------------------------------------------------------------
 Version: 1.0.0
-Date: 13.04.2021.
-  Major Features:
+Date: 2021-04-13
+  Features:
     - Forked the original Advanced Artillery Remotes mod.
     - Updated for Factorio 1.1.
 ---------------------------------------------------------------------------------------------------
 Version: 0.2.0
 Date: 2019-09-21
   Features:
-    - update to factorio 0.18 - no changes
+    - Update to factorio 0.18 - no changes
 ---------------------------------------------------------------------------------------------------
 Version: 0.1.0
 Date: 2019-09-21
   Features:
-    - initial release
+    - Initial release
