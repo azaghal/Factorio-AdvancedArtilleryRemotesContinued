@@ -72,17 +72,28 @@ function remotes.get_discovery_angle_width()
 end
 
 
---- Displays message to all players in specified force.
+--- Notifies player with a flying text message at cursor.
 --
--- Notifications are sent only if verbose logging has been enabled.
+-- Notifications are sent only if verbose logging has been enabled, or if they are errors. In case of errors, an error
+-- sound notification is played as well.
 --
 -- @param force LuaForce Force to notify with a message.
 -- @param message LocalisedString Message to display.
+-- @param is_error bool If message should be treated as an error or not.
 --
-function remotes.notify_force(force, message)
-  if remotes.verbose_reporting_enabled() then
-    force.print(message)
+function remotes.notify_player(player, message, is_error)
+  if remotes.verbose_reporting_enabled() or is_error then
+    player.create_local_flying_text {
+      text = message,
+      create_at_cursor = true,
+      speed = 5
+    }
   end
+
+  if is_error then
+    player.play_sound{ path = "utility/cannot_build" }
+  end
+
 end
 
 
@@ -127,13 +138,13 @@ end
 
 --- Targets enemy spawners within the configured radius of specified position.
 --
--- @param requesting_force LuaForce Force requesting to perform the targeting.
+-- @param player LuaPlayer Player that requested the targeting.
 -- @param surface LuaSurface Surface to target.
 -- @param requested_position MapPosition Position around which to carry-out cluster targeting.
 -- @param targeting_radius int Radius around the requested position to target.
 -- @param explosion_radius int Explosion radius to use when optimising the targeting.
 --
-function remotes.cluster_targeting(requesting_force, surface, requested_position, targeting_radius, explosion_radius)
+function remotes.cluster_targeting(player, surface, requested_position, targeting_radius, explosion_radius)
   local target_entities = {}
   local targets = {}
   local enemy_forces = {}
@@ -142,7 +153,7 @@ function remotes.cluster_targeting(requesting_force, surface, requested_position
   local flares = surface.find_entities_filtered {
     type = "artillery-flare",
     position = requested_position,
-    force = requesting_force,
+    force = player.force,
   }
   for _, flare in pairs(flares) do
     flare.destroy()
@@ -150,14 +161,14 @@ function remotes.cluster_targeting(requesting_force, surface, requested_position
 
   -- Populate list of enemy forces.
   for _, force in pairs(game.forces) do
-    if requesting_force.is_enemy(force) then
+    if player.force.is_enemy(force) then
       table.insert(enemy_forces, force)
     end
   end
 
   -- Bail-out if there are no enemy forces.
   if table_size(enemy_forces) == 0 then
-    remotes.notify_force(requesting_force, {"error.aar-no-enemy-forces"})
+    remotes.notify_player(player, {"error.aar-no-valid-targets"}, true)
     return
   end
 
@@ -191,7 +202,7 @@ function remotes.cluster_targeting(requesting_force, surface, requested_position
 
   -- Bail-out if no target entities could be found.
   if table_size(target_entities) == 0 then
-    remotes.notify_force(requesting_force, {"error.aar-no-valid-targets"})
+    remotes.notify_player(player, {"error.aar-no-valid-targets"}, true)
     return
   end
 
@@ -203,13 +214,13 @@ function remotes.cluster_targeting(requesting_force, surface, requested_position
   -- Optimise number of target positions for flares (reducing required ammo quantity).
   remotes.optimise_targeting(targets, explosion_radius)
 
-  remotes.notify_force(requesting_force, {"info.aar-artillery-cluster-requested", table_size(target_entities), table_size(targets)})
+  remotes.notify_player(player, {"info.aar-artillery-cluster-requested", table_size(target_entities), table_size(targets)})
 
   for _, position in pairs(targets) do
     surface.create_entity {
       name = "artillery-flare",
       position = position,
-      force = requesting_force,
+      force = player.force,
       frame_speed = 0,
       vertical_speed = 0,
       height = 0,
@@ -222,13 +233,13 @@ end
 
 --- Targets positions on map with artillery for discovery/exploration purposes.
 --
--- @param requesting_force LuaForce Force that has requested area discovery.
+-- @param player LuaPlayer Player that has requested area discovery.
 -- @param surface LuaSurface Surface to target.
 -- @param requested_position MapPosition Central position around which to spread-out discovery targets.
 -- @param discovery_radius Radius in which to carry-out discovery.
 -- @param target_distance Desired distance between consecutive discovery targets alongside circle (for spacing them out).
 --
-function remotes.discovery_targeting(requesting_force, surface, requested_position, discovery_radius, target_distance)
+function remotes.discovery_targeting(player, surface, requested_position, discovery_radius, target_distance)
   local target_positions = {}
 
   -- Drop the flare at requested position to avoid hitting friendlies, and to save on ammunition.
@@ -244,17 +255,19 @@ function remotes.discovery_targeting(requesting_force, surface, requested_positi
   -- Locate all artillery pieces on targetted surface.
   local artilleries = surface.find_entities_filtered {
     name = {"artillery-turret", "artillery-wagon"},
-    force = requesting_force,
+    force = player.force,
   }
 
   -- Bail-out if no artillery pieces could be found.
   if table_size(artilleries) == 0 then
+    remotes.notify_player(player, {"error.aar-no-supported-artillery"}, true)
     return
   end
 
   -- Find closest artillery piece to requested position.
   local closest_artillery = surface.get_closest(requested_position, artilleries)
   if not closest_artillery or not closest_artillery.valid then
+    remotes.notify_player(player, {"error.aar-no-supported-artillery"}, true)
     return
   end
 
@@ -276,18 +289,18 @@ function remotes.discovery_targeting(requesting_force, surface, requested_positi
 
   -- Bail-out if no valid target positions could be calculated.
   if table_size(target_positions) == 0 then
+    remotes.notify_player(player, {"error.aar-no-valid-targets"}, true)
     return
   end
 
-  remotes.notify_force(requesting_force, {"info.aar-artillery-discovery-requested", discovery_radius, string.format("%.2f", math.deg(angle_width)), table_size(target_positions) + 1})
-  remotes.notify_force(requesting_force, {"info.aar-artillery-discovery-requested", discovery_radius, string.format("%.2f", math.deg(angle_width)), table_size(target_positions)})
+  remotes.notify_player(player, {"info.aar-artillery-discovery-requested", discovery_radius, string.format("%.2f", math.deg(angle_width)), table_size(target_positions)})
 
   -- Create target artillery flares.
   for _, position in pairs(target_positions) do
     surface.create_entity {
       name="artillery-flare",
       position = position,
-      force = requesting_force,
+      force = player.force,
       frame_speed = 0,
       vertical_speed = 0,
       height = 0,
@@ -328,12 +341,12 @@ function remotes.on_player_used_capsule(event)
 
   if event.item.name == "artillery-cluster-remote" then
     local player = game.players[event.player_index]
-    remotes.cluster_targeting(player.force, player.surface, event.position, remotes.get_cluster_radius(), remotes.get_merge_radius())
+    remotes.cluster_targeting(player, player.surface, event.position, remotes.get_cluster_radius(), remotes.get_merge_radius())
   end
 
   if event.item.name == "artillery-discovery-remote" then
     local player = game.players[event.player_index]
-    remotes.discovery_targeting(player.force, player.surface, event.position, remotes.get_discovery_radius(), remotes.get_discovery_angle_width())
+    remotes.discovery_targeting(player, player.surface, event.position, remotes.get_discovery_radius(), remotes.get_discovery_angle_width())
   end
 end
 

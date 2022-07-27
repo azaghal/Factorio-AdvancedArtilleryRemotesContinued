@@ -9,7 +9,7 @@ data:extend({
         name = "aar-verbose",
         order = "aa",
         setting_type = "runtime-global",
-        default_value = true
+        default_value = false
     },
     {
         type = "string-setting",

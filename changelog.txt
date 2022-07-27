@@ -6,10 +6,13 @@ Date: 9999-99-99
     - Artillery cluster remote no longer wastes an extra artillery round at designated point.
     - Artillery cluster remote now targets any turret that has the word "worm" as part of its name (if configured to target worms).
     - Artillery discovery remote no longer wastes artillery round if unable to calculate valid targets.
+    - Verbose notifications are now disabled by default. Error messages are always shown.
+    - Notifications are only shown to requesting player.
+    - Notifications are shown as flying text under cursor instead through console.
   Features:
   Bugfixes:
     - Fixed logic for finding enemy spawners and worms - all enemy forces will now be taken into the account.
-    - Fixed multi-surface usage/compatibility with Space Exploration satellite mode.
+    - Fixed multi-surface support.
 ---------------------------------------------------------------------------------------------------
 Version: 1.0.0
 Date: 2021-04-13
