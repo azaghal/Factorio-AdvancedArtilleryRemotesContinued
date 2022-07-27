@@ -7,8 +7,10 @@ Date: 9999-99-99
     - Artillery cluster remote now targets any turret that has the word "worm" as part of its name (if configured to target worms).
     - Artillery discovery remote no longer wastes artillery round if unable to calculate valid targets.
     - Verbose notifications are now disabled by default. Error messages are always shown.
+    - Verbose notifications are now enabled/disabled as part of per-player settings.
     - Notifications are only shown to requesting player.
     - Notifications are shown as flying text under cursor instead through console.
+    - Player can now override the cluster remote mode of operation.
   Features:
   Bugfixes:
     - Fixed logic for finding enemy spawners and worms - all enemy forces will now be taken into the account.

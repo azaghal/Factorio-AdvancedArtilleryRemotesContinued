@@ -20,24 +20,31 @@ function remotes.get_merge_radius()
 end
 
 
---- Checks if verbose reporting has been requested via mod settings.
+--- Checks if verbose reporting has been enabled for player.
 --
 -- Thin wrapper around the mod settings.
 --
+-- @param player LuaPlayer Player for which to make the check.
+--
 -- @return true, if verbose reporting was requested, false otherwise.
-function remotes.verbose_reporting_enabled()
-  return settings.global["aar-verbose"].value
+function remotes.verbose_reporting_enabled(player)
+  return player.mod_settings["aar-verbose"].value
 end
 
 
 --- Checks if worms should be targeted by the cluster remote.
 --
--- Thin wrapper around the mod settings.
+-- Thin wrapper around the mod settings. Takes into account both per-player and map settings.
+--
+-- @param player LuaPlayer Player for which to perform the check.
 --
 -- @return true, if worms should be targeted, false otherwise.
 --
-function remotes.target_worms_enabled()
-  return settings.global["aar-cluster-mode"].value == "spawner-and-worms"
+function remotes.target_worms_enabled(player)
+  local player_setting = player.mod_settings["aar-cluster-mode-player"].value
+  local setting = player_setting ~= "use-map-setting" and player_setting or settings.global["aar-cluster-mode"].value
+
+  return setting == "spawner-and-worms"
 end
 
 
@@ -82,7 +89,7 @@ end
 -- @param is_error bool If message should be treated as an error or not.
 --
 function remotes.notify_player(player, message, is_error)
-  if remotes.verbose_reporting_enabled() or is_error then
+  if remotes.verbose_reporting_enabled(player) or is_error then
     player.create_local_flying_text {
       text = message,
       create_at_cursor = true,
@@ -185,7 +192,7 @@ function remotes.cluster_targeting(player, surface, requested_position, targetin
   end
 
   -- Optionally add enemy worms to the list of target entities.
-  if remotes.target_worms_enabled() then
+  if remotes.target_worms_enabled(player) then
     local worms = surface.find_entities_filtered {
       type = "turret",
       position = requested_position,
@@ -349,5 +356,6 @@ function remotes.on_player_used_capsule(event)
     remotes.discovery_targeting(player, player.surface, event.position, remotes.get_discovery_radius(), remotes.get_discovery_angle_width())
   end
 end
+
 
 return remotes

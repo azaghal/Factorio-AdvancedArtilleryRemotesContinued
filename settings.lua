@@ -4,13 +4,10 @@
 
 
 data:extend({
-    {
-        type = "bool-setting",
-        name = "aar-verbose",
-        order = "aa",
-        setting_type = "runtime-global",
-        default_value = false
-    },
+
+    -- Map settings
+    -- ============
+
     {
         type = "string-setting",
         name = "aar-cluster-mode",
@@ -19,6 +16,7 @@ data:extend({
         default_value = "spawner-only",
         allowed_values = {"spawner-only", "spawner-and-worms"}
     },
+
     {
         type = "int-setting",
         name = "aar-cluster-radius",
@@ -28,6 +26,7 @@ data:extend({
         minimum_value = 1,
         maximum_value = 100,
     },
+
     {
         type = "int-setting",
         name = "aar-merge-radius",
@@ -37,6 +36,7 @@ data:extend({
         minimum_value = 1,
         maximum_value = 100,
     },
+
     {
         type = "int-setting",
         name = "aar-arc-radius",
@@ -46,6 +46,7 @@ data:extend({
         minimum_value = 1,
         maximum_value = 360,
     },
+
     {
         type = "int-setting",
         name = "aar-angle-width",
@@ -55,4 +56,25 @@ data:extend({
         minimum_value = 1,
         maximum_value = 100,
     },
+
+    -- Per-player settings
+    -- ===================
+
+    {
+        type = "string-setting",
+        name = "aar-cluster-mode-player",
+        setting_type = "runtime-per-user",
+        order = "aa",
+        default_value = "use-map-setting",
+        allowed_values = {"use-map-setting", "spawner-only", "spawner-and-worms"},
+    },
+
+    {
+        type = "bool-setting",
+        name = "aar-verbose",
+        order = "ab",
+        setting_type = "runtime-per-user",
+        default_value = false
+    },
+
 })
