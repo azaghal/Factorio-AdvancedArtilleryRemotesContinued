@@ -145,7 +145,7 @@ archive="${dist_dir}/${modpack_name}_${modpack_version}.zip"
 
 # Create list of files to package. Exclude development files from the
 # build.
-ignore_paths=(".gitignore" "build.sh")
+ignore_paths=(".gitignore" ".dir-locals.el" "build.sh")
 readarray -t file_list < <(git -C "$base_dir" ls-files)
 
 for ignored_path in "${ignore_paths[@]}"; do

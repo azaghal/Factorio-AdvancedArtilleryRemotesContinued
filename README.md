@@ -6,35 +6,12 @@
 
 **Advanced Artillery Remotes Continued** adds two additional artillery remotes to the game:
 
--   *Artillery Cluster Remote*, which finds nearby spawners and worms and lays down a carpet of artillery flares.
+-   *Artillery Cluster Remote*, which targets nearby spawners and/or worms and blankets them with artillery fire.
 
--   *Artillery Discovery Remote*, which spawns flares in an arc to assist in discovering new chunks.
+-   *Artillery Discovery Remote*, which lays down artillery fire in an arc, useful for exploring the map.
 
-# Settings
+A number of settings are provided for controlling wheter only spawners or both spawners and worms should be targeted, as well as allowing some tweaking in terms of how large of an area should be bombarded. For more details please see the in-game setting descriptions.
 
-## General
-
-**Verbose** *(default: Enabled)*
-> If enabled, output detailed information about fired shells and targets to the console when using the remotes.
-
-## Advanced cluster remote
-
-**Cluster mode** *(default: Spawners only)*
-> Choose whether to target *only* spawners or *both* spawners and worms.
-
-**Cluster radius** *(default: 32)*
-> Radius in tiles.
-
-**Merge radius** *(default: 7)*
-> The mod tries to merge targets into one flare to reduce the number of artillery shells needed. Higher number means more potential targets get merged into one flare. Numbers between 6 and 8 work well.
-
-## Advanced discovery remote
-
-**Discovery arc radius** *(default: 30)*
-> Arc radius (in degrees) in which artillery rounds should be fired from the artillery. Setting the value to 360 degrees would launch an artillery flare in every direction around the artillery.
-
-**Discovery angle width** *(default: 40)*
-> Distance between impact points for artillery flares. Smaller width results in better coverage at the expense of additional artillery shells. Default value should be sufficient for most use-cases.
 
 # History
 
