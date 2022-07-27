@@ -1,6 +1,6 @@
 {
     "name": "AdvancedArtilleryRemotesContinued",
-    "version": "999.999.999",
+    "version": "2.0.0",
     "title": "Advanced Artillery Remotes Continued",
     "author": "azaghal",
     "homepage": "https://github.com/azaghal/Factorio-AdvancedArtilleryRemotesContinued",
@@ -9,5 +9,5 @@
         "base >= 1.1",
         "! AdvArtilleryRemotes"
     ],
-    "description": "Adds two Advanced Artillery Remotes to the game. Artillery Cluster Remote finds nearby spawners and worms and lays down a carpet of artillery flares. Artillery Discovery Remote spawns flares in an arc to assist in discovering new chunks."
+    "description": "Adds two Advanced Artillery Remotes to the game. Artillery Cluster Remote targets nearby spawners and worms and lays down a carpet of artillery fire against them. Artillery Discovery Remote fires artillery rounds in an arc to assist in map exploration."
 }
