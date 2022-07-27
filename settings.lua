@@ -1,3 +1,8 @@
+-- Copyright (c) 2020 Dockmeister
+-- Copyright (c) 2022 Branko Majic
+-- Provided under MIT license. See LICENSE for details.
+
+
 data:extend({
     {
         type = "bool-setting",

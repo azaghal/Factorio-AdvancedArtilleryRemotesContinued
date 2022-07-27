@@ -3,9 +3,6 @@
 -- Provided under MIT license. See LICENSE for details.
 
 
-require("scripts/logger")
-
-
 -- Main implementation
 -- ===================
 
@@ -72,6 +69,20 @@ end
 -- @return int Desired distance between neighbouring target positions.
 function remotes.get_discovery_angle_width()
   return settings.global["aar-angle-width"].value
+end
+
+
+--- Displays message to all players in specified force.
+--
+-- Notifications are sent only if verbose logging has been enabled.
+--
+-- @param force LuaForce Force to notify with a message.
+-- @param message LocalisedString Message to display.
+--
+function remotes.notify_force(force, message)
+  if remotes.verbose_reporting_enabled() then
+    force.print(message)
+  end
 end
 
 
@@ -146,9 +157,7 @@ function remotes.cluster_targeting(requesting_force, surface, requested_position
 
   -- Bail-out if there are no enemy forces.
   if table_size(enemy_forces) == 0 then
-    if remotes.verbose_reporting_enabled() then
-      _info("There are no enemy forces in the game to target with artillery cluster.")
-    end
+    remotes.notify_force(requesting_force, {"error.aar-no-enemy-forces"})
     return
   end
 
@@ -182,9 +191,7 @@ function remotes.cluster_targeting(requesting_force, surface, requested_position
 
   -- Bail-out if no target entities could be found.
   if table_size(target_entities) == 0 then
-    if remotes.verbose_reporting_enabled() then
-      _info("No valid targets found for the artillery cluster.")
-    end
+    remotes.notify_force(requesting_force, {"error.aar-no-valid-targets"})
     return
   end
 
@@ -196,9 +203,7 @@ function remotes.cluster_targeting(requesting_force, surface, requested_position
   -- Optimise number of target positions for flares (reducing required ammo quantity).
   remotes.optimise_targeting(targets, explosion_radius)
 
-  if remotes.verbose_reporting_enabled() then
-    _info("Artillery Cluster requested. " .. table_size(target_entities) .." target(s) found. Creating a total of " .. table_size(targets) .. " artillery flares")
-  end
+  remotes.notify_force(requesting_force, {"info.aar-artillery-cluster-requested", table_size(target_entities), table_size(targets)})
 
   for _, position in pairs(targets) do
     surface.create_entity {
@@ -267,9 +272,7 @@ function remotes.discovery_targeting(requesting_force, surface, requested_positi
     return
   end
 
-  if remotes.verbose_reporting_enabled() then
-    _info("Artillery Discovery requested. Arcradius: " .. discovery_radius .."°, Angle: ".. math.deg(angle_width) .. "°. Creating a total of " .. table_size(target_positions) + 1 .. " artillery flares")
-  end
+  remotes.notify_force(requesting_force, {"info.aar-artillery-discovery-requested", discovery_radius, string.format("%.2f", math.deg(angle_width)), table_size(target_positions) + 1})
 
   -- Create target artillery flares.
   for _, position in pairs(target_positions) do
