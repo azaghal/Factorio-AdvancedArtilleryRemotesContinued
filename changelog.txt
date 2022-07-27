@@ -5,6 +5,7 @@ Date: 9999-99-99
     - Artillery cluster remote only targets spawners and worms in vicinity of designated point. It can no longer be used for firing individual shots in empty areas.
     - Artillery cluster remote no longer wastes an extra artillery round at designated point.
     - Artillery cluster remote now targets any turret that has the word "worm" as part of its name (if configured to target worms).
+    - Artillery discovery remote no longer wastes artillery round if unable to calculate valid targets.
   Features:
   Bugfixes:
     - Fixed logic for finding enemy spawners and worms - all enemy forces will now be taken into the account.

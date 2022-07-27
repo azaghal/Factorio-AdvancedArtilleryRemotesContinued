@@ -231,6 +231,16 @@ end
 function remotes.discovery_targeting(requesting_force, surface, requested_position, discovery_radius, target_distance)
   local target_positions = {}
 
+  -- Drop the flare at requested position to avoid hitting friendlies, and to save on ammunition.
+  local flares = surface.find_entities_filtered {
+    type = "artillery-flare",
+    position = requested_position,
+    force = requested_force,
+  }
+  for _, flare in pairs(flares) do
+    flare.destroy()
+  end
+
   -- Locate all artillery pieces on targetted surface.
   local artilleries = surface.find_entities_filtered {
     name = {"artillery-turret", "artillery-wagon"},
@@ -256,15 +266,12 @@ function remotes.discovery_targeting(requesting_force, surface, requested_positi
 
   -- Calculate target position points.
   for i = -points, points do
-    if i ~= 0 then
-      local angle = i * angle_width
-      local position = {
-        x = (shift_x * math.cos(angle) - shift_y * math.sin(angle)) + closest_artillery.position.x,
-        y = (shift_x * math.sin(angle) + shift_y * math.cos(angle)) + closest_artillery.position.y,
-      }
-
-      table.insert(target_positions, position)
-    end
+    local angle = i * angle_width
+    local position = {
+      x = (shift_x * math.cos(angle) - shift_y * math.sin(angle)) + closest_artillery.position.x,
+      y = (shift_x * math.sin(angle) + shift_y * math.cos(angle)) + closest_artillery.position.y,
+    }
+    table.insert(target_positions, position)
   end
 
   -- Bail-out if no valid target positions could be calculated.
@@ -273,6 +280,7 @@ function remotes.discovery_targeting(requesting_force, surface, requested_positi
   end
 
   remotes.notify_force(requesting_force, {"info.aar-artillery-discovery-requested", discovery_radius, string.format("%.2f", math.deg(angle_width)), table_size(target_positions) + 1})
+  remotes.notify_force(requesting_force, {"info.aar-artillery-discovery-requested", discovery_radius, string.format("%.2f", math.deg(angle_width)), table_size(target_positions)})
 
   -- Create target artillery flares.
   for _, position in pairs(target_positions) do
