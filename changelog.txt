@@ -2,8 +2,12 @@
 Version: 999.999.999
 Date: 9999-99-99
   Changes:
+    - Artillery cluster remote only targets spawners and worms in vicinity of designated point. It can no longer be used for firing individual shots in empty areas.
+    - Artillery cluster remote no longer wastes an extra artillery round at designated point.
+    - Artillery cluster remote now targets any turret that has the word "worm" as part of its name (if configured to target worms).
   Features:
   Bugfixes:
+    - Fixed logic for finding enemy spawners and worms - all enemy forces will now be taken into the account.
 ---------------------------------------------------------------------------------------------------
 Version: 1.0.0
 Date: 2021-04-13

@@ -57,14 +57,6 @@ end
 --[[ ----------------------------------------------------------------------------------
       CLUSTER MODE
 --]]
-local function make_pos_list(entity_list)
-  local pos_list = {}
-  for _, entity in pairs(entity_list) do
-    table.insert(pos_list, entity.position)
-  end
-  return pos_list
-end
-
 local function reduce_flares(pos_flares)
   local function merge_flares(flare1, flare2)
     local new_x = flare1.x - math.floor((flare1.x - flare2.x) / 2)
@@ -100,81 +92,105 @@ local function reduce_flares(pos_flares)
 end
 
 local function cluster_flare(event)
-  local surface = nil
-  if game.players[event.player_index] and game.players[event.player_index].character then
-    surface = game.players[event.player_index].character.surface
-  end
+  local player = game.players[event.player_index]
+  local surface = player and player.character and player.character.surface or nil
+  local requested_position = event.position
+
+  local target_entities = {}
+  local target_positions = {}
+  local enemy_forces = {}
+
+  -- Bail-out if we could not determine the surface.
   if not surface then
     _warn("Unable to determine surface index.")
     return
   end
 
-  local pos_flare = event.position
-  local pos_cluster = nil
-
-  -- cluster mode: spawner only
-  if global.settings.cluster_mode == CLUSTER_MODE_SPAWNER then
-    local spawner_list = surface.find_entities_filtered {
-      type = "unit-spawner",
-      position = pos_flare,
-      radius = global.settings.cluster_radius,
-      force="enemy",
-    }
-
-    pos_cluster = make_pos_list(spawner_list)
-    --_debug("spawner only: found: " .. table_size(spawner_list))
+  -- Drop the flare at requested position to avoid hitting friendlies, and to save on ammunition.
+  local flares = surface.find_entities_filtered {
+    type = "artillery-flare",
+    position = requested_position,
+    force = player.force,
+  }
+  for _, flare in pairs(flares) do
+    flare.destroy()
   end
 
-  -- cluster mode: spawner and worms
+  -- Populate list of enemy forces.
+  for _, force in pairs(game.forces) do
+    if player.force.is_enemy(force) then
+      table.insert(enemy_forces, force)
+    end
+  end
+
+  -- Bail-out if there are no enemy forces.
+  if table_size(enemy_forces) == 0 then
+    if global.settings.verbose then
+      _info("There are no enemy forces in the game to target with artillery cluster.")
+    end
+    return
+  end
+
+  -- Add enemy spawners to list of target entities.
+  local spawners = surface.find_entities_filtered {
+    type = "unit-spawner",
+    position = requested_position,
+    radius = global.settings.cluster_radius,
+    force = enemy_forces,
+  }
+
+  for _, spawner in pairs(spawners) do
+    table.insert(target_entities, spawner)
+  end
+
+  -- Optionally add enemy worms to the list of target entities.
   if global.settings.cluster_mode == CLUSTER_MODE_SPAWNERWORM then
-    local spawner_list = surface.find_entities_filtered {
-      name = {"behemoth-worm-turret", "big-worm-turret", "medium-worm-turret", "small-worm-turret", "biter-spawner", "spitter-spawner"},
-      position = pos_flare,
+    local worms = surface.find_entities_filtered {
+      type = "turret",
+      position = requested_position,
       radius = global.settings.cluster_radius,
-      force="enemy",
+      force = enemy_forces,
     }
 
-    pos_cluster = make_pos_list(spawner_list)
-    --_debug("spawner+worms: found: " .. table_size(spawner_list))
+    for _, worm in pairs(worms) do
+      if string.find(worm.name, "worm") then
+        table.insert(target_entities, worm)
+      end
+    end
   end
 
-  -- do the clustering
-  if not pos_cluster or table_size(pos_cluster) == 0 then return end
+  -- Bail-out if no target entities could be found.
+  if table_size(target_entities) == 0 then
+    if global.settings.verbose then
+      _info("No valid targets found for the artillery cluster.")
+    end
+    return
+  end
 
-  --local tcopy = util.table.deepcopy(pos_cluster)
+  -- Create list of target positions.
+  for _, entity in pairs(target_entities) do
+    table.insert(target_positions, entity.position)
+  end
 
-  local targets_found = table_size(pos_cluster)
-  reduce_flares(pos_cluster)
+  -- Optimise number of target positions for flares (reducing required ammo quantity).
+  reduce_flares(target_positions)
 
   if global.settings.verbose then
-    _info("Artillery Cluster requested. " .. targets_found .." targets found. Creating a total of " .. table_size(pos_cluster) .. " additional artillery flares")
+    _info("Artillery Cluster requested. " .. table_size(target_entities) .." target(s) found. Creating a total of " .. table_size(target_positions) .. " artillery flares")
   end
 
-
-  local flare_force = game.players[event.player_index].force
-
-  for _, pos in pairs(pos_cluster) do
+  for _, position in pairs(target_positions) do
     surface.create_entity {
-      name="artillery-flare",
-      position=pos,
-      force=flare_force,
-      frame_speed=0,
-      vertical_speed=0,
-      height=0,
-      movement={0,0}
+      name = "artillery-flare",
+      position = position,
+      force = player.force,
+      frame_speed = 0,
+      vertical_speed = 0,
+      height = 0,
+      movement = {0, 0}
     }
   end
---    for _, pos in pairs(tcopy) do
---    surface.create_entity {
---      name="artillery-test-flare",
---      position=pos,
---      force=flare_force,
---      frame_speed=0,
---      vertical_speed=0,
---      height=0,
---      movement={0,0}
---    }
---  end
+
 end
 
 --[[ ----------------------------------------------------------------------------------
