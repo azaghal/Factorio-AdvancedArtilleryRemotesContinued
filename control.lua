@@ -85,73 +85,17 @@ end
 local function discovery_flare(event)
   local player = game.players[event.player_index]
   local surface = player and player.surface or nil
-  local requested_position = event.position
+  local position = event.position
+  local discovery_radius = remotes.get_discovery_radius()
+  local discovery_angle_width = remotes.get_discovery_angle_width()
 
-  local target_positions = {}
-
-  -- Bail-out if we could not determine the surface. @TODO: Can this ever even happen?
+  -- Bail-out if we could not determine the surface. @TODO: Can this even happen? Check API docs.
   if not surface then
     _warn("Unable to determine surface index.")
     return
   end
 
-  -- Locate all artillery on targetted surface.
-  local artilleries = surface.find_entities_filtered {
-    name = {"artillery-turret", "artillery-wagon"},
-    force = player.force,
-  }
-
-  -- Bail-out if no nearby artillery could be found.
-  if table_size(artilleries) == 0 then
-    return
-  end
-
-  -- Find closest artillery (piece) to requested position.
-  local closest_artillery = surface.get_closest(requested_position, artilleries)
-  if not closest_artillery or not closest_artillery.valid then
-    return
-  end
-
-  -- Calculate total number of positions (points) to target along the arc.
-  local shift_x, shift_y = requested_position.x - closest_artillery.position.x, requested_position.y - closest_artillery.position.y
-  local dist = math.sqrt(shift_x * shift_x + shift_y * shift_y)
-  local angle_width = math.atan(global.settings.discovery_angle_length / dist)
-  local points = math.floor((global.settings.discovery_arc_radius / math.deg(angle_width)) / 2)
-
-  -- Calculate target position points.
-  for i = -points, points do
-    if i ~= 0 then
-      local angle = i * angle_width
-      local position = {
-        x = (shift_x * math.cos(angle) - shift_y * math.sin(angle)) + closest_artillery.position.x,
-        y = (shift_x * math.sin(angle) + shift_y * math.cos(angle)) + closest_artillery.position.y,
-      }
-
-      table.insert(target_positions, position)
-    end
-  end
-
-  -- Bail-out if no valid target positions could be calculated.
-  if table_size(target_positions) == 0 then
-    return
-  end
-
-  if global.settings.verbose then
-    _info("Artillery Discovery requested. Arcradius: " .. global.settings.discovery_arc_radius .."°, Angle: ".. math.deg(angle_width) .. "°. Creating a total of " .. table_size(target_positions) + 1 .. " artillery flares")
-  end
-
-  -- Create target artillery flares.
-  for _, position in pairs(target_positions) do
-    surface.create_entity {
-      name="artillery-flare",
-      position = position,
-      force = player.force,
-      frame_speed = 0,
-      vertical_speed = 0,
-      height = 0,
-      movement = {0,0}
-    }
-  end
+  remotes.discovery_targeting(player.force, surface, position, discovery_radius, discovery_angle_width)
 end
 
 --[[ ----------------------------------------------------------------------------------

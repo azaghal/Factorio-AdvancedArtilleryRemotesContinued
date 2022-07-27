@@ -52,6 +52,26 @@ function remotes.get_cluster_radius()
 end
 
 
+--- Retrieves configured discovery radius.
+--
+-- Thin wrapper around the mod settings.
+--
+-- @return int Radius in which to target positions for discovery purposes (in degrees).
+function remotes.get_discovery_radius()
+  return settings.global["aar-arc-radius"].value
+end
+
+
+--- Retrieves configured discovery arc angle width.
+--
+-- Thin wrapper around the mod settings.
+--
+-- @return int Desired distance between neighbouring target positions.
+function remotes.get_discovery_angle_width()
+  return settings.global["aar-angle-width"].value
+end
+
+
 --- Optimises number of targets (based on explosion overlaps) in order to reduce ammunition usage.
 --
 -- @param targets {MapPosition} List of targets (positions). Modified during function execution.
@@ -186,6 +206,78 @@ function remotes.cluster_targeting(requesting_force, surface, requested_position
       vertical_speed = 0,
       height = 0,
       movement = {0, 0}
+    }
+  end
+
+end
+
+
+--- Targets positions on map with artillery for discovery/exploration purposes.
+--
+-- @param requesting_force LuaForce Force that has requested area discovery.
+-- @param surface LuaSurface Surface to target.
+-- @param requested_position MapPosition Central position around which to spread-out discovery targets.
+-- @param discovery_radius Radius in which to carry-out discovery.
+-- @param target_distance Desired distance between consecutive discovery targets alongside circle (for spacing them out).
+--
+function remotes.discovery_targeting(requesting_force, surface, requested_position, discovery_radius, target_distance)
+  local target_positions = {}
+
+  -- Locate all artillery pieces on targetted surface.
+  local artilleries = surface.find_entities_filtered {
+    name = {"artillery-turret", "artillery-wagon"},
+    force = requesting_force,
+  }
+
+  -- Bail-out if no artillery pieces could be found.
+  if table_size(artilleries) == 0 then
+    return
+  end
+
+  -- Find closest artillery piece to requested position.
+  local closest_artillery = surface.get_closest(requested_position, artilleries)
+  if not closest_artillery or not closest_artillery.valid then
+    return
+  end
+
+  -- Calculate total number of positions to target along the arc.
+  local shift_x, shift_y = requested_position.x - closest_artillery.position.x, requested_position.y - closest_artillery.position.y
+  local dist = math.sqrt(shift_x * shift_x + shift_y * shift_y)
+  local angle_width = math.atan(target_distance / dist)
+  local points = math.floor((discovery_radius / math.deg(angle_width)) / 2)
+
+  -- Calculate target position points.
+  for i = -points, points do
+    if i ~= 0 then
+      local angle = i * angle_width
+      local position = {
+        x = (shift_x * math.cos(angle) - shift_y * math.sin(angle)) + closest_artillery.position.x,
+        y = (shift_x * math.sin(angle) + shift_y * math.cos(angle)) + closest_artillery.position.y,
+      }
+
+      table.insert(target_positions, position)
+    end
+  end
+
+  -- Bail-out if no valid target positions could be calculated.
+  if table_size(target_positions) == 0 then
+    return
+  end
+
+  if remotes.verbose_reporting_enabled() then
+    _info("Artillery Discovery requested. Arcradius: " .. discovery_radius .."°, Angle: ".. math.deg(angle_width) .. "°. Creating a total of " .. table_size(target_positions) + 1 .. " artillery flares")
+  end
+
+  -- Create target artillery flares.
+  for _, position in pairs(target_positions) do
+    surface.create_entity {
+      name="artillery-flare",
+      position = position,
+      force = requesting_force,
+      frame_speed = 0,
+      vertical_speed = 0,
+      height = 0,
+      movement = {0,0}
     }
   end
 
