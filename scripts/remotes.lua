@@ -3,6 +3,9 @@
 -- Provided under MIT license. See LICENSE for details.
 
 
+require("scripts/logger")
+
+
 -- Main implementation
 -- ===================
 
@@ -283,5 +286,44 @@ function remotes.discovery_targeting(requesting_force, surface, requested_positi
 
 end
 
+
+-- Event handlers
+-- ==============
+
+
+--- Handler invoked for game version updates, mod version changes, and mod startup configuration changes.
+--
+-- @param data ConfigurationChangedData Information about mod changes passed on by the game engine.
+--
+function remotes.on_configuration_changed(data)
+  local mod_changes = data.mod_changes["AdvancedArtilleryRemotesContinued"]
+
+  if mod_changes then
+    -- Wipe the settings stored in global variable (from older mod versions). They are already easily accessible through
+    -- mod API, and this helps avoid having to keep them in sync inside of global variable.
+    global.settings = nil
+
+    -- Wipe the messages stored in global variable (from older mod versions). Unused data structure.
+    global.messages = nil
+  end
+end
+
+
+--- Handler invoked when player uses a capsule or artillery remotes.
+--
+-- @param event EventData Event data as passed-in by the game engine.
+--
+function remotes.on_player_used_capsule(event)
+
+  if event.item.name == "artillery-cluster-remote" then
+    local player = game.players[event.player_index]
+    remotes.cluster_targeting(player.force, player.surface, event.position, remotes.get_cluster_radius(), remotes.get_merge_radius())
+  end
+
+  if event.item.name == "artillery-discovery-remote" then
+    local player = game.players[event.player_index]
+    remotes.discovery_targeting(player.force, player.surface, event.position, remotes.get_discovery_radius(), remotes.get_discovery_angle_width())
+  end
+end
 
 return remotes
