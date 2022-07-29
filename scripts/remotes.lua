@@ -48,6 +48,19 @@ function remotes.target_worms_enabled(player)
 end
 
 
+--- Checks if cluster remote can be used for firing individual shots if no target entities are found.
+--
+-- Thin wrapper around the mod setting.
+--
+-- @param player LuaPlayer Player for which to perform the check.
+--
+-- @return true, if cluster remote single target fallback is enabled, false otherwise.
+--
+function remotes.cluster_remote_single_target_fallback_enabled(player)
+  return player.mod_settings["aar-cluster-single-target-fallback"].value
+end
+
+
 --- Retrieves radius in which the cluster remote operates.
 --
 -- Thin wrapper around the mod settings.
@@ -143,6 +156,84 @@ function remotes.optimise_targeting(targets, explosion_radius)
 end
 
 
+--- Retrieves list of entities to target with cluster fire.
+--
+-- Spawners are always targeted. Worms are targeted if explicitly requested via parameter.
+--
+-- @param force LuaForce Requesting force. Only opposing forces will be targeted.
+-- @param surface LuaSurface Surface to target.
+-- @param position MapPosition Central position around which to search for target entities.
+-- @param radius uint Radius around the requested position within which to search for target entities.
+-- @param include_worms bool Specify if worms should be included for targeting (in addition to spawners).
+--
+-- @return {LuaEntity} List of targeted enemy entities.
+--
+function remotes.get_cluster_target_entities(requesting_force, surface, position, radius, include_worms)
+  local target_entities = {}
+  local enemy_forces = {}
+
+  -- Populate list of enemy forces.
+  for _, force in pairs(game.forces) do
+    if requesting_force.is_enemy(force) then
+      table.insert(enemy_forces, force)
+    end
+  end
+
+  -- Bail-out if there are no enemy forces.
+  if table_size(enemy_forces) == 0 then
+    return {}
+  end
+
+  -- Add enemy spawners to list of target entities.
+  local spawners = surface.find_entities_filtered {
+    type = "unit-spawner",
+    position = position,
+    radius = radius,
+    force = enemy_forces,
+  }
+
+  for _, spawner in pairs(spawners) do
+    table.insert(target_entities, spawner)
+  end
+
+  -- Optionally add enemy worms to the list of target entities.
+  if include_worms then
+    local worms = surface.find_entities_filtered {
+      type = "turret",
+      position = position,
+      radius = radius,
+      force = enemy_forces,
+    }
+
+    for _, worm in pairs(worms) do
+      if string.find(worm.name, "worm") then
+        table.insert(target_entities, worm)
+      end
+    end
+  end
+
+  return target_entities
+end
+
+
+--- Finds and removes artillery flares from specified position (if any).
+--
+-- @param force LuaForce Force which owns the flares.
+-- @param surface LuaSufrface Surface to search.
+-- @param position MapPosition Surface position to search.
+--
+function remotes.remove_artillery_flare(force, surface, position)
+  local flares = surface.find_entities_filtered {
+    type = "artillery-flare",
+    position = position,
+    force = force,
+  }
+  for _, flare in pairs(flares) do
+    flare.destroy()
+  end
+end
+
+
 --- Targets enemy spawners within the configured radius of specified position.
 --
 -- @param player LuaPlayer Player that requested the targeting.
@@ -154,64 +245,24 @@ end
 function remotes.cluster_targeting(player, surface, requested_position, targeting_radius, explosion_radius)
   local target_entities = {}
   local targets = {}
-  local enemy_forces = {}
 
-  -- Drop the flare at requested position to avoid hitting friendlies, and to save on ammunition.
-  local flares = surface.find_entities_filtered {
-    type = "artillery-flare",
-    position = requested_position,
-    force = player.force,
-  }
-  for _, flare in pairs(flares) do
-    flare.destroy()
-  end
+  local target_entities = remotes.get_cluster_target_entities(player.force, surface, requested_position,
+                                                              targeting_radius, remotes.target_worms_enabled(player))
 
-  -- Populate list of enemy forces.
-  for _, force in pairs(game.forces) do
-    if player.force.is_enemy(force) then
-      table.insert(enemy_forces, force)
-    end
-  end
-
-  -- Bail-out if there are no enemy forces.
-  if table_size(enemy_forces) == 0 then
-    remotes.notify_player(player, {"error.aar-no-valid-targets"}, true)
-    return
-  end
-
-  -- Add enemy spawners to list of target entities.
-  local spawners = surface.find_entities_filtered {
-    type = "unit-spawner",
-    position = requested_position,
-    radius = targeting_radius,
-    force = enemy_forces,
-  }
-
-  for _, spawner in pairs(spawners) do
-    table.insert(target_entities, spawner)
-  end
-
-  -- Optionally add enemy worms to the list of target entities.
-  if remotes.target_worms_enabled(player) then
-    local worms = surface.find_entities_filtered {
-      type = "turret",
-      position = requested_position,
-      radius = targeting_radius,
-      force = enemy_forces,
-    }
-
-    for _, worm in pairs(worms) do
-      if string.find(worm.name, "worm") then
-        table.insert(target_entities, worm)
-      end
-    end
-  end
-
-  -- Bail-out if no target entities could be found.
+  -- Bail-out if no matching entities could be found.
   if table_size(target_entities) == 0 then
-    remotes.notify_player(player, {"error.aar-no-valid-targets"}, true)
+
+    -- Drop the artillery flare created by player if single target fallback was not enabled - thus preserving some ammo,
+    -- and getting clear indication that nothing could be targeted.
+    if not remotes.cluster_remote_single_target_fallback_enabled(player) then
+      remotes.remove_artillery_flare(player.force, surface, requested_position)
+      remotes.notify_player(player, {"error.aar-no-valid-targets"}, true)
+    end
     return
   end
+
+  -- Drop the artillery flare created by player - it is only used for marking the center of location to target.
+  remotes.remove_artillery_flare(player.force, surface, requested_position)
 
   -- Create list of target positions.
   for _, entity in pairs(target_entities) do

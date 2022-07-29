@@ -3,6 +3,7 @@ Version: 999.999.999
 Date: 9999-99-99
   Changes:
   Features:
+    - Fallback mode for using artillery cluster remote for targeting selected position with a single artillery round if no spawners/worms are found in vicinity. Configurable per-player, disabled by default.
   Bugfixes:
 ---------------------------------------------------------------------------------------------------
 Version: 2.0.0
