@@ -276,7 +276,7 @@ function remotes.cluster_targeting(player, surface, requested_position, targetin
 
   for _, position in pairs(targets) do
     surface.create_entity {
-      name = "artillery-flare",
+      name = "artillery-cluster-flare",
       position = position,
       force = player.force,
       frame_speed = 0,
@@ -302,7 +302,7 @@ function remotes.discovery_targeting(player, surface, requested_position, discov
 
   -- Drop the flare at requested position to avoid hitting friendlies, and to save on ammunition.
   local flares = surface.find_entities_filtered {
-    type = "artillery-flare",
+    name = "artillery-discovery-flare",
     position = requested_position,
     force = requested_force,
   }
@@ -362,7 +362,7 @@ function remotes.discovery_targeting(player, surface, requested_position, discov
   -- Create target artillery flares.
   for _, position in pairs(target_positions) do
     surface.create_entity {
-      name="artillery-flare",
+      name="artillery-discovery-flare",
       position = position,
       force = player.force,
       frame_speed = 0,

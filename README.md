@@ -10,6 +10,8 @@
 
 -   *Artillery Discovery Remote*, which lays down artillery fire in an arc, useful for exploring the map.
 
+Both remotes default to using base (vanilla) game artillery shell ammo category (`artillery-shell`). This should help prevent firing of atomic artillery shells when using the remotes. Take note that it is up to mods that implement additional types of artillery shells to place them into separate ammo category.
+
 A number of settings are provided for controlling wheter only spawners or both spawners and worms should be targeted, as well as allowing some tweaking in terms of how large of an area should be bombarded. For more details please see the in-game setting descriptions.
 
 

@@ -3,6 +3,16 @@
 -- Provided under MIT license. See LICENSE for details.
 
 
+-- Custom artillery flare that sets the shot category. This allows us to restrict cluster shots to plain (vanilla)
+-- artillery shells to avoid using expensive ammo from mods that implement atomic artillery and such. Take note that
+-- such mods must use different ammo category for their ammo for this to work as expected.
+local cluster_flare = util.table.deepcopy(data.raw["artillery-flare"]["artillery-flare"])
+cluster_flare.name = "artillery-cluster-flare"
+cluster_flare.icon = "__AdvancedArtilleryRemotesContinued__/graphics/icons/artillery-cluster-remote.png"
+cluster_flare.icon_size = 32
+cluster_flare.icon_mipmaps = 1
+cluster_flare.shot_category = "artillery-shell"
+
 local cluster_remote = {
   type = "capsule",
   name = "artillery-cluster-remote",
@@ -15,60 +25,6 @@ local cluster_remote = {
   subgroup = "capsule",
   order = "zzza",
   stack_size = 1
-}
-
-local cluster_flare = {
-  type = "artillery-flare",
-  name = "artillery-cluster-flare",
-  icon = "__AdvancedArtilleryRemotesContinued__/graphics/icons/artillery-cluster-remote.png",
-  icon_size = 32,
-  flags = {"placeable-off-grid", "not-on-map"},
-  map_color = {r=1, g=0.5, b=0},
-  life_time = 60 * 60,
-  initial_height = 0,
-  initial_vertical_speed = 0,
-  initial_frame_speed = 1,
-  shots_per_flare = 1,
-  early_death_ticks = 3 * 60,
-  pictures =
-  {
-    {
-      filename = "__core__/graphics/shoot-cursor-red.png",
-      priority = "low",
-      width = 258,
-      height = 183,
-      frame_count = 1,
-      scale = 1,
-      flags = {"icon"}
-    },
-  }
-}
-
-local test_flare = {
-  type = "artillery-flare",
-  name = "artillery-test-flare",
-  icon = "__AdvancedArtilleryRemotesContinued__/graphics/icons/artillery-cluster-remote.png",
-  icon_size = 32,
-  flags = {"placeable-off-grid", "not-on-map"},
-  map_color = {r=0, g=0, b=1},
-  life_time = 60 * 60,
-  initial_height = 0,
-  initial_vertical_speed = 0,
-  initial_frame_speed = 1,
-  shots_per_flare = 1,
-  early_death_ticks = 3 * 60,
-  pictures =
-  {
-    {
-      filename = "__core__/graphics/shoot-cursor-green.png",
-      priority = "low",
-      width = 258,
-      height = 183,
-      frame_count = 1,
-      scale = 1,
-      flags = {"icon"}
-    },
-  }
 }
 
 local cluster_recipe = {

@@ -3,6 +3,17 @@
 -- Provided under MIT license. See LICENSE for details.
 
 
+-- Custom discovery flare that sets the shot category. This allows us to restrict discovery shots to plain (vanilla)
+-- artillery shells to avoid using expensive ammo from mods that implement atomic artillery and such. Take note that
+-- such mods must use different ammo category for their ammo for this to work as expected.
+local discovery_flare = util.table.deepcopy(data.raw["artillery-flare"]["artillery-flare"])
+discovery_flare.name = "artillery-discovery-flare"
+discovery_flare.icon = "__AdvancedArtilleryRemotesContinued__/graphics/icons/artillery-discovery-remote.png"
+discovery_flare.icon_size = 32
+discovery_flare.icon_mipmaps = 1
+discovery_flare.shot_category = "artillery-shell"
+
+
 local discovery_remote = {
   type = "capsule",
   name = "artillery-discovery-remote",
@@ -17,32 +28,6 @@ local discovery_remote = {
   stack_size = 1
 }
 
-local discovery_flare = {
-  type = "artillery-flare",
-  name = "artillery-discovery-flare",
-  icon = "__AdvancedArtilleryRemotesContinued__/graphics/icons/artillery-discovery-remote.png",
-  icon_size = 32,
-  flags = {"placeable-off-grid", "not-on-map"},
-  map_color = {r=1, g=0.5, b=0},
-  life_time = 60 * 60,
-  initial_height = 0,
-  initial_vertical_speed = 0,
-  initial_frame_speed = 1,
-  shots_per_flare = 1,
-  early_death_ticks = 3 * 60,
-  pictures =
-  {
-    {
-      filename = "__core__/graphics/shoot-cursor-red.png",
-      priority = "low",
-      width = 258,
-      height = 183,
-      frame_count = 1,
-      scale = 1,
-      flags = {"icon"}
-    },
-  }
-}
 
 local discovery_recipe = {
   type = "recipe",
