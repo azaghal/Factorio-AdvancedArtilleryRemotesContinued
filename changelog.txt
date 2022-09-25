@@ -1,10 +1,8 @@
 ---------------------------------------------------------------------------------------------------
-Version: 999.999.999
-Date: 9999-99-99
+Version: 3.0.0
+Date: 2022-09-25
   Changes:
     - Artillery cluster and discovery remotes now default to using only the base game artillery shell ammo category. This should help avoid firing of more advanced/expensive ammunition (such as nuclear shells) from mods, provided that such artillery shell ammo is placed into separate (non-vanilla) ammo category.
-  Features:
-  Bugfixes:
 ---------------------------------------------------------------------------------------------------
 Version: 2.1.1
 Date: 2022-09-25
