@@ -310,9 +310,15 @@ function remotes.discovery_targeting(player, surface, requested_position, discov
     flare.destroy()
   end
 
+  -- No supported artillery is present in the game. This most likely indicates bug in the mod.
+  if table_size(global.supported_artillery_entity_prototypes) == 0 then
+    player.print({"error.aar-no-supported-artillery-in-game"})
+    return
+  end
+
   -- Locate all artillery pieces on targetted surface.
   local artilleries = surface.find_entities_filtered {
-    name = {"artillery-turret", "artillery-wagon"},
+    name = global.supported_artillery_entity_prototypes,
     force = player.force,
   }
 
@@ -369,8 +375,53 @@ function remotes.discovery_targeting(player, surface, requested_position, discov
 end
 
 
+--- Retrieves list of artillery entity prototypes that are capable of firing specific ammo category.
+--
+-- @param ammo_category string Ammo category to match.
+--
+-- @return {string} List of entity artillery entity prototype names.
+--
+function remotes.get_artillery_entity_prototypes_by_ammo_category(ammo_category)
+  -- "Set" for storing the matched entity prototype names.
+  local matched_artillery_prototypes = {}
+
+  local artillery_prototypes = game.get_filtered_entity_prototypes(
+    {
+      { filter = "type", type = "artillery-turret" },
+      { filter = "type", type = "artillery-wagon" }
+    }
+  )
+
+  for _, prototype in pairs(artillery_prototypes) do
+    for _, gun in pairs(prototype.guns) do
+      for _, category in pairs(gun.attack_parameters.ammo_categories) do
+        if category == ammo_category then
+          matched_artillery_prototypes[prototype.name] = true
+        end
+      end
+    end
+  end
+
+  -- Convert the set into list of names.
+  local matched_artillery_prototype_names = {}
+  for name, _ in pairs(matched_artillery_prototypes) do
+    table.insert(matched_artillery_prototype_names, name)
+  end
+
+  return matched_artillery_prototype_names
+end
+
+
 -- Event handlers
 -- ==============
+
+
+--- Handler invoked when the mod is added for the first time.
+--
+function remotes.on_init()
+  -- Set-up list of supported artillery entity prototypes.
+  global.supported_artillery_entity_prototypes = remotes.get_artillery_entity_prototypes_by_ammo_category("artillery-shell")
+end
 
 
 --- Handler invoked for game version updates, mod version changes, and mod startup configuration changes.
@@ -388,6 +439,9 @@ function remotes.on_configuration_changed(data)
     -- Wipe the messages stored in global variable (from older mod versions). Unused data structure.
     global.messages = nil
   end
+
+  -- Set-up list of supported artillery entity prototypes.
+  global.supported_artillery_entity_prototypes = remotes.get_artillery_entity_prototypes_by_ammo_category("artillery-shell")
 end
 
 
