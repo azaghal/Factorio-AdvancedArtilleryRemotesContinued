@@ -1,8 +1,6 @@
 ---------------------------------------------------------------------------------------------------
-Version: 999.999.999
-Date: 9999-99-99
-  Changes:
-  Features:
+Version: 2.1.1
+Date: 2022-09-25
   Bugfixes:
     - Fixed that modded artillery turrets were not taken into account when calculating the discovery arc center. Now the remote will take into account all artillery turrets that can fire the (vanilla) artillery shell ammo category.
 ---------------------------------------------------------------------------------------------------
