@@ -2,6 +2,7 @@
 Version: 999.999.999
 Date: 9999-99-99
   Changes:
+    - Higher quality and reworked icons for artillery cluster and discovery remotes.
   Features:
   Bugfixes:
 ---------------------------------------------------------------------------------------------------
