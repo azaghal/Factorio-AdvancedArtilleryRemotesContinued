@@ -2,6 +2,16 @@
 -- Copyright (c) 2022 Branko Majic
 -- Provided under MIT license. See LICENSE for details.
 
+-- Colours used for applying tint on targeting circles, allowing to distinguish between different remotes and target
+-- entities.
+local tint_colours = {
+  red = {255, 45, 8},
+  orange = {255, 169, 8},
+  green = {8, 255, 45},
+  teal = {8, 255, 169},
+  blue = {45, 8, 255},
+  purple = {169, 8, 255}
+}
 
 -- Use two layers for the cluster remote icon in order to allow applying tint to the targeting circle. This way we can
 -- easily define additional cluster remotes for different types of artillery shells that are visually distinct. In order
@@ -9,7 +19,7 @@
 local cluster_remote_icons = {
   {
     icon = "__AdvancedArtilleryRemotesContinued__/graphics/icons/artillery-remote-target.png",
-    tint = {r=255, g=45, b=8, a=255}
+    tint = tint_colours.red
   },
   {
     icon = "__AdvancedArtilleryRemotesContinued__/graphics/icons/artillery-cluster-remote-shells.png",
@@ -19,12 +29,35 @@ local cluster_remote_icons = {
 -- Custom artillery flare that sets the shot category. This allows us to restrict cluster shots to plain (vanilla)
 -- artillery shells to avoid using expensive ammo from mods that implement atomic artillery and such. Take note that
 -- such mods must use different ammo category for their ammo for this to work as expected.
-local cluster_flare = util.table.deepcopy(data.raw["artillery-flare"]["artillery-flare"])
-cluster_flare.name = "artillery-cluster-flare"
-cluster_flare.icons = cluster_remote_icons
-cluster_flare.icon_size = 64
-cluster_flare.icon_mipmaps = 4
-cluster_flare.shot_category = "artillery-shell"
+local cluster_flare = {
+  type = "artillery-flare",
+  name = "artillery-cluster-flare",
+  shot_category = "artillery-shell",
+  icons = cluster_remote_icons,
+  icon_size = 64,
+  icon_mipmaps = 4,
+  flags = {"placeable-off-grid", "not-on-map"},
+  map_color = tint_colours.red,
+  life_time = 60 * 60,
+  initial_height = 0,
+  initial_vertical_speed = 0,
+  initial_frame_speed = 1,
+  shots_per_flare = 1,
+  early_death_ticks = 3 * 60,
+  pictures =
+    {
+      {
+        filename = "__AdvancedArtilleryRemotesContinued__/graphics/artillery-target.png",
+        tint = tint_colours.red,
+        priority = "low",
+        width = 258,
+        height = 183,
+        frame_count = 1,
+        scale = 1,
+        flags = {"icon"}
+      }
+    }
+}
 
 local cluster_remote = {
   type = "capsule",
