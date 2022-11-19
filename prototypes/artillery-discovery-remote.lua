@@ -37,8 +37,8 @@ local discovery_remote = {
     type = "artillery-remote",
     flare = "artillery-discovery-flare"
   },
-  subgroup = "capsule",
-  order = "zzza",
+  subgroup = "defensive-structure",
+  order = "b[turret]-d[artillery-turret]-bb[remote]",
   stack_size = 1
 }
 

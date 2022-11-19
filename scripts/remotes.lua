@@ -276,7 +276,7 @@ function remotes.cluster_targeting(player, surface, requested_position, targetin
 
   for _, position in pairs(targets) do
     surface.create_entity {
-      name = "artillery-cluster-flare",
+      name = "artillery-cluster-flare-artillery-shell",
       position = position,
       force = player.force,
       frame_speed = 0,
@@ -412,6 +412,24 @@ function remotes.get_artillery_entity_prototypes_by_ammo_category(ammo_category)
 end
 
 
+--- Updates recipe availability for all forces based on researched technologies.
+--
+-- This function should be used when additional artillery ammo categories are introduced into the game by mods added to
+-- an existing save.
+--
+function remotes.update_recipe_availability()
+  for _, force in pairs(game.forces) do
+    for _, recipe in pairs(force.recipes) do
+      if force.technologies["artillery"].researched and
+         string.find(recipe.name, "artillery[-]cluster[-]remote[-]") == 1 or
+         recipe.name == "artillery-discovery-remote" then
+        recipe.enabled = true
+      end
+    end
+  end
+end
+
+
 -- Event handlers
 -- ==============
 
@@ -442,6 +460,9 @@ function remotes.on_configuration_changed(data)
 
   -- Set-up list of supported artillery entity prototypes.
   global.supported_artillery_entity_prototypes = remotes.get_artillery_entity_prototypes_by_ammo_category("artillery-shell")
+
+  -- Update availability of advanced artillery remotes for all forces.
+  remotes.update_recipe_availability()
 end
 
 
@@ -451,7 +472,7 @@ end
 --
 function remotes.on_player_used_capsule(event)
 
-  if event.item.name == "artillery-cluster-remote" then
+  if event.item.name == "artillery-cluster-remote-artillery-shell" then
     local player = game.players[event.player_index]
     remotes.cluster_targeting(player, player.surface, event.position, remotes.get_cluster_radius(), remotes.get_merge_radius())
   end

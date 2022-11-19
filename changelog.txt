@@ -3,7 +3,10 @@ Version: 999.999.999
 Date: 9999-99-99
   Changes:
     - Higher quality and reworked icons for artillery cluster and discovery remotes.
+    - Default (vanilla) artillery cluster remote has been slightly renamed to make it clearer what artillery ammo it uses (to cater for multiple artillery cluster remotes support).
+    - Advanced artillery remotes are now grouped next to the other artillery-related items in the crafting and filter windows.
   Features:
+    - Multiple artillery cluster remotes are now provided for each artillery ammo category type, allowing the use of non-vanilla artillery for cluster artillery strikes.
   Bugfixes:
 ---------------------------------------------------------------------------------------------------
 Version: 3.0.0
