@@ -239,12 +239,17 @@ end
 -- @param player LuaPlayer Player that requested the targeting.
 -- @param surface LuaSurface Surface to target.
 -- @param requested_position MapPosition Position around which to carry-out cluster targeting.
+-- @param remote_prototype LuaItemPrototype Prototype of cluster remote used to request targeting.
 -- @param targeting_radius int Radius around the requested position to target.
 -- @param explosion_radius int Explosion radius to use when optimising the targeting.
 --
-function remotes.cluster_targeting(player, surface, requested_position, targeting_radius, explosion_radius)
+function remotes.cluster_targeting(player, surface, requested_position, remote_prototype, targeting_radius, explosion_radius)
   local target_entities = {}
   local targets = {}
+
+  local artillery_flare_name = string.gsub(remote_prototype.name,
+                                           "artillery[-]cluster[-]remote[-]",
+                                           "artillery-cluster-flare-")
 
   local target_entities = remotes.get_cluster_target_entities(player.force, surface, requested_position,
                                                               targeting_radius, remotes.target_worms_enabled(player))
@@ -276,7 +281,7 @@ function remotes.cluster_targeting(player, surface, requested_position, targetin
 
   for _, position in pairs(targets) do
     surface.create_entity {
-      name = "artillery-cluster-flare-artillery-shell",
+      name = artillery_flare_name,
       position = position,
       force = player.force,
       frame_speed = 0,
@@ -311,14 +316,14 @@ function remotes.discovery_targeting(player, surface, requested_position, discov
   end
 
   -- No supported artillery is present in the game. This most likely indicates bug in the mod.
-  if table_size(global.supported_artillery_entity_prototypes) == 0 then
+  if table_size(global.supported_artillery_entity_prototypes["artillery-shell"] or {}) == 0 then
     player.print({"error.aar-no-supported-artillery-in-game"})
     return
   end
 
   -- Locate all artillery pieces on targetted surface.
   local artilleries = surface.find_entities_filtered {
-    name = global.supported_artillery_entity_prototypes,
+    name = global.supported_artillery_entity_prototypes["artillery-shell"],
     force = player.force,
   }
 
@@ -372,6 +377,36 @@ function remotes.discovery_targeting(player, surface, requested_position, discov
     }
   end
 
+end
+
+
+--- Retrieves list of artillery ammo categories.
+--
+-- @return {string} List of artillery ammo category names.
+--
+function remotes.get_artillery_ammo_categories()
+  local artillery_prototypes = game.get_filtered_entity_prototypes(
+    {
+      { filter = "type", type = "artillery-turret" },
+      { filter = "type", type = "artillery-wagon" }
+    }
+  )
+
+  local ammo_categories_set = {}
+  for _, prototype in pairs(artillery_prototypes) do
+    for _, gun in pairs(prototype.guns) do
+      for _, category in pairs(gun.attack_parameters.ammo_categories) do
+        ammo_categories_set[category] = true
+      end
+    end
+  end
+
+  local ammo_categories = {}
+  for ammo_category, _ in pairs(ammo_categories_set) do
+    table.insert(ammo_categories, ammo_category)
+  end
+
+  return  ammo_categories
 end
 
 
@@ -437,8 +472,14 @@ end
 --- Handler invoked when the mod is added for the first time.
 --
 function remotes.on_init()
-  -- Set-up list of supported artillery entity prototypes.
-  global.supported_artillery_entity_prototypes = remotes.get_artillery_entity_prototypes_by_ammo_category("artillery-shell")
+  -- Set-up list of available ammo categories.
+  global.artillery_ammo_categories = remotes.get_artillery_ammo_categories()
+
+  -- Set-up list of supported artillery entity prototypes by ammo category.
+  global.supported_artillery_entity_prototypes = {}
+  for _, ammo_category in pairs(global.artillery_ammo_categories) do
+    global.supported_artillery_entity_prototypes[ammo_category] = remotes.get_artillery_entity_prototypes_by_ammo_category(ammo_category)
+  end
 end
 
 
@@ -458,8 +499,14 @@ function remotes.on_configuration_changed(data)
     global.messages = nil
   end
 
-  -- Set-up list of supported artillery entity prototypes.
-  global.supported_artillery_entity_prototypes = remotes.get_artillery_entity_prototypes_by_ammo_category("artillery-shell")
+  -- Set-up list of available ammo categories.
+  global.artillery_ammo_categories = remotes.get_artillery_ammo_categories()
+
+  -- Set-up list of supported artillery entity prototypes by ammo category.
+  global.supported_artillery_entity_prototypes = {}
+  for _, ammo_category in pairs(global.artillery_ammo_categories) do
+    global.supported_artillery_entity_prototypes[ammo_category] = remotes.get_artillery_entity_prototypes_by_ammo_category(ammo_category)
+  end
 
   -- Update availability of advanced artillery remotes for all forces.
   remotes.update_recipe_availability()
@@ -472,9 +519,9 @@ end
 --
 function remotes.on_player_used_capsule(event)
 
-  if event.item.name == "artillery-cluster-remote-artillery-shell" then
+  if string.find(event.item.name, "artillery[-]cluster[-]remote[-]") == 1 then
     local player = game.players[event.player_index]
-    remotes.cluster_targeting(player, player.surface, event.position, remotes.get_cluster_radius(), remotes.get_merge_radius())
+    remotes.cluster_targeting(player, player.surface, event.position, event.item, remotes.get_cluster_radius(), remotes.get_merge_radius())
   end
 
   if event.item.name == "artillery-discovery-remote" then
