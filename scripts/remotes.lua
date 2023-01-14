@@ -15,8 +15,9 @@ local remotes = {}
 --
 -- @return int Merge (explosion) radius for locating overlapping targets.
 --
-function remotes.get_merge_radius()
-  return settings.global["aar-merge-radius"].value
+function remotes.get_merge_radius(ammo_category)
+
+  return global.ammo_category_default_merge_radius[ammo_category]
 end
 
 
@@ -241,9 +242,8 @@ end
 -- @param requested_position MapPosition Position around which to carry-out cluster targeting.
 -- @param remote_prototype LuaItemPrototype Prototype of cluster remote used to request targeting.
 -- @param targeting_radius int Radius around the requested position to target.
--- @param explosion_radius int Explosion radius to use when optimising the targeting.
 --
-function remotes.cluster_targeting(player, surface, requested_position, remote_prototype, targeting_radius, explosion_radius)
+function remotes.cluster_targeting(player, surface, requested_position, remote_prototype, targeting_radius)
   local target_entities = {}
   local targets = {}
 
@@ -251,8 +251,14 @@ function remotes.cluster_targeting(player, surface, requested_position, remote_p
                                            "artillery[-]cluster[-]remote[-]",
                                            "artillery-cluster-flare-")
 
+  local ammo_category = string.gsub(remote_prototype.name,
+                                    "artillery[-]cluster[-]remote[-]",
+                                    "")
+
   local target_entities = remotes.get_cluster_target_entities(player.force, surface, requested_position,
                                                               targeting_radius, remotes.target_worms_enabled(player))
+
+  local explosion_radius = remotes.get_merge_radius(ammo_category)
 
   -- Bail-out if no matching entities could be found.
   if table_size(target_entities) == 0 then
@@ -447,6 +453,118 @@ function remotes.get_artillery_entity_prototypes_by_ammo_category(ammo_category)
 end
 
 
+--- Retrieve (maximum) damage radius for projectile's attack result.
+--
+-- Implementation is based on traversing the attack result table recursively and finding the largest radius for an
+-- "area" type of action/effect.
+--
+-- This _seems_ to be the algorithm that Factorio uses when calculating the damage radius for a particular projectile
+-- (which is then subsequently used for calculating the artillery remote damage indicator).
+--
+-- @param attack_result table Table describing the attack result (LuaEntityPrototype.attack_result).
+--
+-- @return int Damage radius for projectile's attack result.
+--
+function remotes.get_attack_result_damage_radius(attack_result)
+  local damage_radius = 0
+
+  -- Start off with current table's radius if any.
+  if attack_result.type and attack_result.type == "area" and attack_result.radius then
+    damage_radius = attack_result.radius
+  end
+
+  -- Recursively iterate over any nested tables. Easier done this way than to sort-out exact nesting structure that
+  -- Factorio implements.
+  for _, element in pairs(attack_result) do
+
+    if type(element) == "table" then
+      local element_damage_radius = remotes.get_attack_result_damage_radius(element)
+      damage_radius =
+        element_damage_radius > damage_radius and element_damage_radius or
+        damage_radius
+    end
+
+  end
+
+  return damage_radius
+end
+
+
+--- Retrieve damage radius for projectile.
+--
+-- @param name string Name of projectile prototype.
+--
+-- @return int Damage radius for projectile.
+--
+function remotes.get_projectile_damage_radius(name)
+  local prototype = game.entity_prototypes[name]
+
+  -- Starting point.
+  local projectile_damage_radius = 0
+
+  -- Projectile can maybe have multiple attack results. Simply find the one that has the biggest damage radius.
+  for _, attack_result in pairs(prototype.attack_result) do
+
+    local attack_result_damage_radius = remotes.get_attack_result_damage_radius(attack_result)
+
+    projectile_damage_radius =
+      attack_result_damage_radius > projectile_damage_radius and attack_result_damage_radius or
+      projectile_damage_radius
+
+  end
+
+  return projectile_damage_radius
+end
+
+
+--- Calculates the default merge radius for a particular (artillery) ammo category based on the area damage it causes.
+--
+-- The default merge radius is calculated in order to match-up with the damage indicator when holding a particular
+-- artillery remote.
+--
+-- Technically, the returned value will be a _diameter_, but for legacy reasons (pre-fork) it is called radius within
+-- the code. It might be a good idea to actually fix this naming in some way down the line to reduce confusion.
+--
+-- @param ammo_category string Ammo category (prototype) name.
+--
+-- @return int Merge radius for particular ammo category.
+--
+function remotes.get_default_merge_radius(ammo_category)
+  local ammo_prototypes = game.get_filtered_item_prototypes( { { filter = "type", type = "ammo" } } )
+
+  local projectile_damage_radius_maximum = 0
+
+  -- Iterate over all ammo items, and operate only on those that have a matching ammo category.
+  for _, ammo_prototype in pairs(ammo_prototypes) do
+    local ammo_type = ammo_prototype.get_ammo_type()
+
+    if ammo_type.category == ammo_category then
+
+      for _, action in pairs(ammo_type.action) do
+
+        if action.type == "direct" then
+
+          for _, action_delivery in pairs(action.action_delivery) do
+            local projectile_damage_radius = remotes.get_projectile_damage_radius(action_delivery.projectile)
+            projectile_damage_radius_maximum =
+              projectile_damage_radius > projectile_damage_radius_maximum and projectile_damage_radius or
+              projectile_damage_radius_maximum
+          end
+
+        end
+
+      end
+
+    end
+
+  end
+
+  -- This is technically a diameter, but for legacy reasons we still call it radius. The optimisation code actually
+  -- depends on diameter value.
+  return projectile_damage_radius_maximum * 2
+end
+
+
 --- Updates recipe availability for all forces based on researched technologies.
 --
 -- This function should be used when additional artillery ammo categories are introduced into the game by mods added to
@@ -465,13 +583,12 @@ function remotes.update_recipe_availability()
 end
 
 
--- Event handlers
--- ==============
-
-
---- Handler invoked when the mod is added for the first time.
+--- Initialises all global data from scratch.
 --
-function remotes.on_init()
+-- Recalculates lists of artillery ammo categories, supported artillery entity prototypes by ammo category, and default
+-- merge radius for each ammo category. Meant to be called via on_init and on_configuration_changed event handlers.
+--
+function remotes.initialise_global_data()
   -- Set-up list of available ammo categories.
   global.artillery_ammo_categories = remotes.get_artillery_ammo_categories()
 
@@ -480,6 +597,23 @@ function remotes.on_init()
   for _, ammo_category in pairs(global.artillery_ammo_categories) do
     global.supported_artillery_entity_prototypes[ammo_category] = remotes.get_artillery_entity_prototypes_by_ammo_category(ammo_category)
   end
+
+  -- Calculate default merge radius for each ammo category.
+  global.ammo_category_default_merge_radius = {}
+  for _, ammo_category in pairs(global.artillery_ammo_categories) do
+    global.ammo_category_default_merge_radius[ammo_category] = remotes.get_default_merge_radius(ammo_category)
+  end
+end
+
+
+-- Event handlers
+-- ==============
+
+
+--- Handler invoked when the mod is added for the first time.
+--
+function remotes.on_init()
+  remotes.initialise_global_data()
 end
 
 
@@ -499,14 +633,8 @@ function remotes.on_configuration_changed(data)
     global.messages = nil
   end
 
-  -- Set-up list of available ammo categories.
-  global.artillery_ammo_categories = remotes.get_artillery_ammo_categories()
-
-  -- Set-up list of supported artillery entity prototypes by ammo category.
-  global.supported_artillery_entity_prototypes = {}
-  for _, ammo_category in pairs(global.artillery_ammo_categories) do
-    global.supported_artillery_entity_prototypes[ammo_category] = remotes.get_artillery_entity_prototypes_by_ammo_category(ammo_category)
-  end
+  -- Reinitialise all global data to pick up any changes in ammo categories etc.
+  remotes.initialise_global_data()
 
   -- Update availability of advanced artillery remotes for all forces.
   remotes.update_recipe_availability()
@@ -521,7 +649,7 @@ function remotes.on_player_used_capsule(event)
 
   if string.find(event.item.name, "artillery[-]cluster[-]remote[-]") == 1 then
     local player = game.players[event.player_index]
-    remotes.cluster_targeting(player, player.surface, event.position, event.item, remotes.get_cluster_radius(), remotes.get_merge_radius())
+    remotes.cluster_targeting(player, player.surface, event.position, event.item, remotes.get_cluster_radius())
   end
 
   if event.item.name == "artillery-discovery-remote" then
