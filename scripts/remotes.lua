@@ -120,9 +120,22 @@ end
 
 --- Optimises number of targets (based on explosion overlaps) in order to reduce ammunition usage.
 --
--- @param targets {MapPosition} List of targets (positions). Modified during function execution.
+-- The algorithm:
 --
-function remotes.optimise_targeting(targets, explosion_radius)
+--   - Looks-up pairs of targets that are closer to each-other than the specified explosion range, and replaces them
+--     with a new target positioned midway between the two.
+--   - Removes targets that are already within explosion radius (half the explosion range) of already optimised target.
+--   - Targets that cannot be paired-up or are not already covered by explosion radius of another optimised target are
+--     preserved as-is (and considered as optimised).
+--
+-- @param targets {MapPosition} List of targets (positions) on a single surface.
+-- @param explosion_range float Explosion range (diameter) around designated targets.
+--
+-- @return {MapPosition} Optimised list of targets (positions).
+--
+function remotes.optimise_targeting(targets, explosion_range)
+
+  local optimised_targets = {}
 
   -- Calculates new target position that is positioned in-between the passed-in targets.
   local function merge_targets(target1, target2)
@@ -132,28 +145,55 @@ function remotes.optimise_targeting(targets, explosion_radius)
     return {x = new_x, y = new_y}
   end
 
-  -- Checks if the explosions would overlap for passed-in targets based on explosion radius.
-  local function explosions_overlap(target1, target2, explosion_radius)
+  -- Checks if two targets could be merged into single one positioned midway between the two.
+  local function can_merge_targets(target1, target2, explosion_range)
     local x, y = target1.x - target2.x, target1.y - target2.y
 
-    return (x^2 + y^2 < explosion_radius^2)
+    return (x^2 + y^2 < explosion_range^2)
   end
+
+  -- Keep track of processed targets - those have already been optimised and cannot be dropped without risking the full
+  -- explosion coverage. Should map keys to boolean values.
+  local processed = {}
 
   -- Iterate over all targets and see if it is possible to merge them in pairs.
-  local targets_count = table_size(targets)
   for i1, target1 in pairs(targets) do
+    if not processed[i1] then
 
-    -- Compare to existing targets, break once a merge happens.
-    for i2 = i1+1, targets_count do
-      local target2 = targets[i2]
+      -- Assume target is already optimised (this value is used in one of the later steps).
+      local optimised_target = target1
 
-      if target2 and explosions_overlap(target1, target2, explosion_radius) then
-        targets[i1] = merge_targets(target1, target2)
-        targets[i2] = nil
-        break
+      -- Merge the target with another one if possible.
+      for i2, target2 in pairs(targets) do
+
+        if i1 ~= i2 and not processed[i1] and not processed[i2] and can_merge_targets(target1, target2, explosion_range) then
+          optimised_target = merge_targets(target1, target2)
+          processed[i2] = true
+          break
+        end
+
       end
+
+      -- Mark the starting target as processed (at this point it is going to be kept, or replaced with a merged target).
+      processed[i1] = true
+
+      -- Check if any other (unprocessed) targets fall within the explosion radius of optimised target.
+      for i, target in pairs(targets) do
+
+        -- Reuse the test, but pass-in radius instead of diameter (we won't place anything in-between).
+        if not processed[i] and can_merge_targets(optimised_target, target, explosion_range/2) then
+          processed[i] = true
+        end
+
+      end
+
+      -- Finally add the optimised target to the list.
+      table.insert(optimised_targets, optimised_target)
+
     end
   end
+
+  return optimised_targets
 end
 
 
@@ -281,7 +321,7 @@ function remotes.cluster_targeting(player, surface, requested_position, remote_p
   end
 
   -- Optimise number of target positions for flares (reducing required ammo quantity).
-  remotes.optimise_targeting(targets, explosion_radius)
+  targets = remotes.optimise_targeting(targets, explosion_radius)
 
   remotes.notify_player(player, {"info.aar-artillery-cluster-requested", table_size(target_entities), table_size(targets)})
 
