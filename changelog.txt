@@ -5,7 +5,8 @@ Date: 9999-99-99
     - Higher quality and reworked icons for artillery cluster and discovery remotes.
     - Default (vanilla) artillery cluster remote has been slightly renamed to make it clearer what artillery ammo it uses (to cater for multiple artillery cluster remotes support).
     - Advanced artillery remotes are now grouped next to the other artillery-related items in the crafting and filter windows.
-    - Merge radius for artillery cluster remotes is now calculated dynamically, using prototype information for projectiles.
+    - Merge radius for artillery cluster remotes is now calculated dynamically, using prototype information for projectiles. Can be overridden per ammo category type using a mod setting.
+    - Merge radius is now referred to as damage radius in mod settings.
     - New (somewhat improved) algorithm for optimising targeting, designed to work better with more powerful explosions.
   Features:
     - Multiple artillery cluster remotes are now provided for each artillery ammo category type, allowing the use of non-vanilla artillery for cluster artillery strikes.

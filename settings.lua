@@ -28,13 +28,12 @@ data:extend({
     },
 
     {
-        type = "int-setting",
-        name = "aar-merge-radius",
+        type = "string-setting",
+        name = "aar-damage-radius-overrides",
         setting_type = "runtime-global",
         order = "ad",
-        default_value = 7,
-        minimum_value = 1,
-        maximum_value = 100,
+        default_value = "",
+        allow_blank = true,
     },
 
     {

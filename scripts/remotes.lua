@@ -9,7 +9,50 @@
 local remotes = {}
 
 
---- Retrieves damage radius for ammo category (used for cluster targeting optimisation).
+--- Parses damage radius overrides for ammo categories.
+--
+-- @param value string Value to parse.
+--
+-- @return {string=number} Mapping between ammo category names and damage radius overrides.
+--
+function remotes.parse_damage_radius_overrides(value)
+
+  -- Table for storing the parsed results.
+  local overrides = {}
+
+  -- Store list of unknown ammo categories for showing a warning message.
+  local unknown_ammo_categories = {}
+
+  for override in string.gmatch(value, "[^,]+") do
+
+    local ammo_category = string.gsub(override, "=.*", "")
+    local damage_radius = string.gsub(override, "^[^=]*=", "")
+
+    damage_radius = tonumber(damage_radius)
+
+    -- Store unrecognised ammo categories.
+    if not game.ammo_category_prototypes[ammo_category] then
+      table.insert(unknown_ammo_categories, ammo_category)
+    end
+
+    -- Validate damage radius is valid.
+    if not damage_radius or damage_radius < 0 then
+      game.print({"error.aar-error-parsing-damage-radius-overrides"})
+      return {}
+    else
+      overrides[ammo_category] = damage_radius
+    end
+
+  end
+
+  if table_size(unknown_ammo_categories) > 0 then
+    game.print({"warning.aar-unknown-ammo-category", table.concat(unknown_ammo_categories, ", ")})
+  end
+
+  return overrides
+end
+
+
 --
 -- Uses calculated damage radius unless the player provides override via mod settings.
 --
@@ -17,7 +60,9 @@ local remotes = {}
 --
 function remotes.get_damage_radius(ammo_category)
 
-  return global.ammo_category_default_damage_radius[ammo_category]
+  return
+    global.ammo_category_damage_radius_overrides[ammo_category] or
+    global.ammo_category_damage_radius_defaults[ammo_category]
 end
 
 
@@ -574,7 +619,7 @@ end
 --
 -- @return int Damage radius for passed-in ammo category.
 --
-function remotes.get_default_damage_radius(ammo_category)
+function remotes.get_damage_radius_default(ammo_category)
   local ammo_prototypes = game.get_filtered_item_prototypes( { { filter = "type", type = "ammo" } } )
 
   local projectile_damage_radius_maximum = 0
@@ -642,10 +687,28 @@ function remotes.initialise_global_data()
   end
 
   -- Calculate default damage radius for each ammo category.
-  global.ammo_category_default_damage_radius = {}
+  global.ammo_category_damage_radius_defaults = {}
   for _, ammo_category in pairs(global.artillery_ammo_categories) do
-    global.ammo_category_default_damage_radius[ammo_category] = remotes.get_default_damage_radius(ammo_category)
+    global.ammo_category_damage_radius_defaults[ammo_category] = remotes.get_damage_radius_default(ammo_category)
   end
+
+  global.ammo_category_damage_radius_overrides = remotes.parse_damage_radius_overrides(settings.global["aar-damage-radius-overrides"].value)
+end
+
+
+--- Shows currently detected default damage radius for each supported ammo category.
+--
+-- @param player LuaPlayer Player to which the listing should be shown.
+--
+function remotes.show_damage_radius_defaults(player)
+  local listing = {}
+  local sorted_ammo_categories = {}
+
+  for ammo_category, damage_radius in pairs(global.ammo_category_damage_radius_defaults) do
+    table.insert(listing, ammo_category .. "=" .. damage_radius)
+  end
+
+  player.print({"info.aar-ammo-category-damage-radius-defaults", table.concat(listing, "\n") })
 end
 
 
@@ -698,6 +761,19 @@ function remotes.on_player_used_capsule(event)
   if event.item.name == "artillery-discovery-remote" then
     local player = game.players[event.player_index]
     remotes.discovery_targeting(player, player.surface, event.position, remotes.get_discovery_radius(), remotes.get_discovery_angle_width())
+  end
+end
+
+
+--- Handler invoked when player changes the mod configuration.
+--
+-- @param event EventData Event data as passed-in by the game engine.
+--
+function remotes.on_runtime_mod_setting_changed(event)
+
+  -- Parse the player-provided settings.
+  if event.setting == "aar-damage-radius-overrides" then
+    global.ammo_category_damage_radius_overrides = remotes.parse_damage_radius_overrides(settings.global["aar-damage-radius-overrides"].value)
   end
 end
 
