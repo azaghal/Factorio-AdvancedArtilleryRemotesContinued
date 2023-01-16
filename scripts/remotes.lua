@@ -9,15 +9,15 @@
 local remotes = {}
 
 
---- Retrieves the merge radius setting.
+--- Retrieves damage radius for ammo category (used for cluster targeting optimisation).
 --
--- Acts as a thin wrapper around the mod setting.
+-- Uses calculated damage radius unless the player provides override via mod settings.
 --
--- @return int Merge (explosion) radius for locating overlapping targets.
+-- @return int Damage radius for optimising cluster targeting.
 --
-function remotes.get_merge_radius(ammo_category)
+function remotes.get_damage_radius(ammo_category)
 
-  return global.ammo_category_default_merge_radius[ammo_category]
+  return global.ammo_category_default_damage_radius[ammo_category]
 end
 
 
@@ -118,22 +118,22 @@ function remotes.notify_player(player, message, is_error)
 end
 
 
---- Optimises number of targets (based on explosion overlaps) in order to reduce ammunition usage.
+--- Optimises number of targets (based on damage radius) in order to reduce ammunition usage.
 --
 -- The algorithm:
 --
---   - Looks-up pairs of targets that are closer to each-other than the specified explosion range, and replaces them
---     with a new target positioned midway between the two.
---   - Removes targets that are already within explosion radius (half the explosion range) of already optimised target.
---   - Targets that cannot be paired-up or are not already covered by explosion radius of another optimised target are
+--   - Looks-up pairs of targets that are close enough to each-other to be replaced with a single target that is
+--     positioned midway between them, and still be caught within the damage radius.
+--   - Removes targets that are already within damage radius of another already optimised target.
+--   - Targets that cannot be paired-up or are not already covered by damage radius of another optimised target are
 --     preserved as-is (and considered as optimised).
 --
 -- @param targets {MapPosition} List of targets (positions) on a single surface.
--- @param explosion_range float Explosion range (diameter) around designated targets.
+-- @param damage_radius float Damage radius around designated targets.
 --
 -- @return {MapPosition} Optimised list of targets (positions).
 --
-function remotes.optimise_targeting(targets, explosion_range)
+function remotes.optimise_targeting(targets, damage_radius)
 
   local optimised_targets = {}
 
@@ -146,10 +146,10 @@ function remotes.optimise_targeting(targets, explosion_range)
   end
 
   -- Checks if two targets could be merged into single one positioned midway between the two.
-  local function can_merge_targets(target1, target2, explosion_range)
+  local function can_merge_targets(target1, target2, damage_radius)
     local x, y = target1.x - target2.x, target1.y - target2.y
 
-    return (x^2 + y^2 < explosion_range^2)
+    return (x^2 + y^2 < (damage_radius * 2)^2)
   end
 
   -- Keep track of processed targets - those have already been optimised and cannot be dropped without risking the full
@@ -166,7 +166,7 @@ function remotes.optimise_targeting(targets, explosion_range)
       -- Merge the target with another one if possible.
       for i2, target2 in pairs(targets) do
 
-        if i1 ~= i2 and not processed[i1] and not processed[i2] and can_merge_targets(target1, target2, explosion_range) then
+        if i1 ~= i2 and not processed[i1] and not processed[i2] and can_merge_targets(target1, target2, damage_radius) then
           optimised_target = merge_targets(target1, target2)
           processed[i2] = true
           break
@@ -177,11 +177,11 @@ function remotes.optimise_targeting(targets, explosion_range)
       -- Mark the starting target as processed (at this point it is going to be kept, or replaced with a merged target).
       processed[i1] = true
 
-      -- Check if any other (unprocessed) targets fall within the explosion radius of optimised target.
+      -- Check if any other (unprocessed) targets fall within the damage radius of optimised target.
       for i, target in pairs(targets) do
 
-        -- Reuse the test, but pass-in radius instead of diameter (we won't place anything in-between).
-        if not processed[i] and can_merge_targets(optimised_target, target, explosion_range/2) then
+        -- Reuse the test, pass-in half the damage radius since we don't want to check the mid-point.
+        if not processed[i] and can_merge_targets(optimised_target, target, damage_radius/2) then
           processed[i] = true
         end
 
@@ -298,7 +298,7 @@ function remotes.cluster_targeting(player, surface, requested_position, remote_p
   local target_entities = remotes.get_cluster_target_entities(player.force, surface, requested_position,
                                                               targeting_radius, remotes.target_worms_enabled(player))
 
-  local explosion_radius = remotes.get_merge_radius(ammo_category)
+  local damage_radius = remotes.get_damage_radius(ammo_category)
 
   -- Bail-out if no matching entities could be found.
   if table_size(target_entities) == 0 then
@@ -321,7 +321,7 @@ function remotes.cluster_targeting(player, surface, requested_position, remote_p
   end
 
   -- Optimise number of target positions for flares (reducing required ammo quantity).
-  targets = remotes.optimise_targeting(targets, explosion_radius)
+  targets = remotes.optimise_targeting(targets, damage_radius)
 
   remotes.notify_player(player, {"info.aar-artillery-cluster-requested", table_size(target_entities), table_size(targets)})
 
@@ -501,6 +501,11 @@ end
 -- This _seems_ to be the algorithm that Factorio uses when calculating the damage radius for a particular projectile
 -- (which is then subsequently used for calculating the artillery remote damage indicator).
 --
+-- However, take note that some of the traversed attack results do _not_ actually cause any damage - they merely produce
+-- visual effect (like spreading smoke etc). For simplicity, and to match vanilla game remote's damage indicator, we
+-- ignore that detail. Otherwise we would need to do some more recursion and processing to figure out exactly what
+-- projectile will cause damage etc.
+--
 -- @param attack_result table Table describing the attack result (LuaEntityPrototype.attack_result).
 --
 -- @return int Damage radius for projectile's attack result.
@@ -542,7 +547,7 @@ function remotes.get_projectile_damage_radius(name)
   -- Starting point.
   local projectile_damage_radius = 0
 
-  -- Projectile can maybe have multiple attack results. Simply find the one that has the biggest damage radius.
+  -- Projectile can maybe have multiple attack results. Find the biggest value.
   for _, attack_result in pairs(prototype.attack_result) do
 
     local attack_result_damage_radius = remotes.get_attack_result_damage_radius(attack_result)
@@ -557,19 +562,19 @@ function remotes.get_projectile_damage_radius(name)
 end
 
 
---- Calculates the default merge radius for a particular (artillery) ammo category based on the area damage it causes.
+--- Calculates the default damage radius for an (artillery) ammo category.
 --
--- The default merge radius is calculated in order to match-up with the damage indicator when holding a particular
--- artillery remote.
+-- The default damage radius is calculated to match the damage indicator that an artillery remote displays when player
+-- is holding it in hand.
 --
--- Technically, the returned value will be a _diameter_, but for legacy reasons (pre-fork) it is called radius within
--- the code. It might be a good idea to actually fix this naming in some way down the line to reduce confusion.
+-- Take note that this is normally the largest possible damage radius for all the different projctiles that are tied-in
+-- to the ammo category.
 --
 -- @param ammo_category string Ammo category (prototype) name.
 --
--- @return int Merge radius for particular ammo category.
+-- @return int Damage radius for passed-in ammo category.
 --
-function remotes.get_default_merge_radius(ammo_category)
+function remotes.get_default_damage_radius(ammo_category)
   local ammo_prototypes = game.get_filtered_item_prototypes( { { filter = "type", type = "ammo" } } )
 
   local projectile_damage_radius_maximum = 0
@@ -599,9 +604,7 @@ function remotes.get_default_merge_radius(ammo_category)
 
   end
 
-  -- This is technically a diameter, but for legacy reasons we still call it radius. The optimisation code actually
-  -- depends on diameter value.
-  return projectile_damage_radius_maximum * 2
+  return projectile_damage_radius_maximum
 end
 
 
@@ -626,7 +629,7 @@ end
 --- Initialises all global data from scratch.
 --
 -- Recalculates lists of artillery ammo categories, supported artillery entity prototypes by ammo category, and default
--- merge radius for each ammo category. Meant to be called via on_init and on_configuration_changed event handlers.
+-- damage radius for each ammo category. Meant to be called via on_init and on_configuration_changed event handlers.
 --
 function remotes.initialise_global_data()
   -- Set-up list of available ammo categories.
@@ -638,10 +641,10 @@ function remotes.initialise_global_data()
     global.supported_artillery_entity_prototypes[ammo_category] = remotes.get_artillery_entity_prototypes_by_ammo_category(ammo_category)
   end
 
-  -- Calculate default merge radius for each ammo category.
-  global.ammo_category_default_merge_radius = {}
+  -- Calculate default damage radius for each ammo category.
+  global.ammo_category_default_damage_radius = {}
   for _, ammo_category in pairs(global.artillery_ammo_categories) do
-    global.ammo_category_default_merge_radius[ammo_category] = remotes.get_default_merge_radius(ammo_category)
+    global.ammo_category_default_damage_radius[ammo_category] = remotes.get_default_damage_radius(ammo_category)
   end
 end
 
