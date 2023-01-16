@@ -54,12 +54,13 @@ end
 -- to effectively "pop" them off one by one from the list.
 local tint_colours_iterator = pairs(TINT_COLOURS)
 local tint_colours_iterator_current = nil
+local colour
 
 for category, unassigned in pairs(ammo_categories) do
   if unassigned == true then
 
     -- Grab the next tint colour in the list.
-    local tint_colours_iterator_last, colour = tint_colours_iterator(TINT_COLOURS, tint_colours_iterator_current)
+    tint_colours_iterator_current, colour = tint_colours_iterator(TINT_COLOURS, tint_colours_iterator_current)
 
     -- We limit number of remotes to only six, but this should be easy to expand by just adding more colours.
     if tint_colours_iterator_current then
