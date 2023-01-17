@@ -83,7 +83,7 @@ for ammo_category, tint_colour in pairs(ammo_categories) do
     "",
     {"item-name.artillery-cluster-remote"},
     " (",
-    {"ammo-category-name." .. ammo_category},
+    {"?", {"ammo-category-name." .. ammo_category}, ammo_category},
     ")"
   }
   -- Use two layers for the cluster remote icon in order to allow applying tint to the targeting circle. This way we can
