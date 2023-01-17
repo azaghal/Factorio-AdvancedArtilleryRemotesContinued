@@ -60,6 +60,12 @@ Known issues
 -   Artillery cluster remotes are researched as part of vanilla game *Artillery* research instead of making them available as part of a particular artillery shell type technology research. This is done primarily to avoid messing too much with the 3rd-party mod technology trees.
 
 
+Roadmap
+-------
+
+-   Introduce separate research technologies for discovery and cluster remotes, this avoiding having to mess with vanilla technology.
+
+
 Credits
 -------
 

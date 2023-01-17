@@ -167,6 +167,5 @@ for ammo_category, tint_colour in pairs(ammo_categories) do
   data:extend({remote})
   data:extend({remote_recipe})
 
-  -- @TODO: Would be nice if we were to unlock the cluster remote recipe alongside actual ammunition type.
   table.insert(data.raw["technology"]["artillery"].effects, {type = "unlock-recipe", recipe = remote_name})
 end
