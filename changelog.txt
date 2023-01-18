@@ -1,8 +1,6 @@
 ---------------------------------------------------------------------------------------------------
-Version: 999.999.999
-Date: 9999-99-99
-  Changes:
-  Features:
+Version: 4.0.1
+Date: 2023-01-18
   Bugfixes:
     - Fixed crash when calculating damage radius for ammo category when action delivery has no projectile defined.
 ---------------------------------------------------------------------------------------------------
