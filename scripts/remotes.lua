@@ -635,10 +635,14 @@ function remotes.get_damage_radius_default(ammo_category)
         if action.type == "direct" then
 
           for _, action_delivery in pairs(action.action_delivery) do
-            local projectile_damage_radius = remotes.get_projectile_damage_radius(action_delivery.projectile)
-            projectile_damage_radius_maximum =
-              projectile_damage_radius > projectile_damage_radius_maximum and projectile_damage_radius or
-              projectile_damage_radius_maximum
+
+            if action_delivery.projectile then
+              local projectile_damage_radius = remotes.get_projectile_damage_radius(action_delivery.projectile)
+              projectile_damage_radius_maximum =
+                projectile_damage_radius > projectile_damage_radius_maximum and projectile_damage_radius or
+                projectile_damage_radius_maximum
+            end
+
           end
 
         end
