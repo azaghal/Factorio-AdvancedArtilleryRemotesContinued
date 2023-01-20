@@ -593,7 +593,7 @@ function remotes.get_projectile_damage_radius(name)
   local projectile_damage_radius = 0
 
   -- Projectile can maybe have multiple attack results. Find the biggest value.
-  for _, attack_result in pairs(prototype.attack_result) do
+  for _, attack_result in pairs(prototype.attack_result or {}) do
 
     local attack_result_damage_radius = remotes.get_attack_result_damage_radius(attack_result)
 

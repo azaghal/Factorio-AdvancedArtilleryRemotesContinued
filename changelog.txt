@@ -4,6 +4,7 @@ Date: 9999-99-99
   Changes:
   Features:
   Bugfixes:
+    - Fixed crash when projectile prototype does not have (optional) attack result.
 ---------------------------------------------------------------------------------------------------
 Version: 4.0.1
 Date: 2023-01-18
