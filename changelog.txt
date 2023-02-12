@@ -1,8 +1,6 @@
 ---------------------------------------------------------------------------------------------------
-Version: 999.999.999
-Date: 9999-99-99
-  Changes:
-  Features:
+Version: 4.0.3
+Date: 2023-02-13
   Bugfixes:
     - Fixed crash with current version of "Shortcuts for 1.1" mod (1.1.27). This is a temporary workaround, and long-term fix needs to be done in the "Shortcuts for 1.1" mod itself.
 ---------------------------------------------------------------------------------------------------
