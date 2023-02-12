@@ -4,3 +4,7 @@
 
 
 require "prototypes/artillery-discovery-remote"
+
+-- @WORKAROUND: Compatibility prototypes for use with Shortcuts mod. Once Shortcuts mod has been updated to deal with
+--              new cluster remote name, this line can be dropped.
+require "prototypes/artillery-cluster-remote-shortcuts-compatibility"

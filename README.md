@@ -58,6 +58,7 @@ Known issues
 -   Distinct artillery cluster remotes can only be created per ammo category - if a mod introduces additional artillery shells (which have different damage radius compared to vanilla artillery shells) that belong to the default artillery shell ammo category, then only one artillery cluster remote type is added by the mod. The reason for this is that target (flare) spawning (created by the remote) revolves around ammo categories, and it is not possible to tell the game to use only a particular ammo type unless it belongs in its own category.
 -   Only up to six artillery cluster remote types can exist in any given game. There is no real limitation behind this in the code, except that the six corresponding colours have been generated statically using six-tone colour palette generator algorithm. Should a need arise, this mod can easily be updated to support more types of artillery cluster remotes.
 -   Artillery cluster remotes are researched as part of vanilla game *Artillery* research instead of making them available as part of a particular artillery shell type technology research. This is done primarily to avoid messing too much with the 3rd-party mod technology trees.
+-   When using [Shortcuts for 1.1](https://mods.factorio.com/mod/Shortcuts-ick) mod, vanilla artillery cluster remote will not be hidden from the game. This is a consequence of temporary fix for crash in *Shortcuts for 1.1* mod, version 1.1.27.
 
 
 Roadmap

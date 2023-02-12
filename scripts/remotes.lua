@@ -332,6 +332,13 @@ function remotes.cluster_targeting(player, surface, requested_position, remote_p
   local target_entities = {}
   local targets = {}
 
+  -- @WORKAROUND: Handling of compatibility cluster remote for use with Shortcuts mod. Once Shortcuts mod has been
+  --              updated to deal with new cluster remote name (artillery-cluster-remote-artillery-shell), this block
+  --              can be dropped.
+  if remote_prototype.name == "artillery-cluster-remote" then
+    remote_prototype = game.item_prototypes["artillery-cluster-remote-artillery-shell"]
+  end
+
   local artillery_flare_name = string.gsub(remote_prototype.name,
                                            "artillery[-]cluster[-]remote[-]",
                                            "artillery-cluster-flare-")
@@ -757,7 +764,9 @@ end
 --
 function remotes.on_player_used_capsule(event)
 
-  if string.find(event.item.name, "artillery[-]cluster[-]remote[-]") == 1 then
+  -- @WORKAROUND: Name comparison for artillery-cluster-remote is meant for compatbility mode with Shortcuts. Drop the
+  --              condition once the Shortcuts mod has been properly fixed to handle new prototype name.
+  if string.find(event.item.name, "artillery[-]cluster[-]remote[-]") == 1 or event.item.name == "artillery-cluster-remote" then
     local player = game.players[event.player_index]
     remotes.cluster_targeting(player, player.surface, event.position, event.item, remotes.get_cluster_radius())
   end
