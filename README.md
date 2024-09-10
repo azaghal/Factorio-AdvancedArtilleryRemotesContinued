@@ -1,8 +1,9 @@
-Advanced Artillery Remotes (Continued)
+ArtillerySmartClusteringRemote
 ======================================
 
 FORK
 ----
+Forked from [Advanced Artillery Remotes (Continued)](https://github.com/azaghal/Factorio-AdvancedArtilleryRemotesContinued)
 This fork removes the discovery remote and focuses only on the cluster remote, changing it to use clustering algorithm to assure optimized desctruction.
 Research and recipe for remote is also updated.
 
@@ -14,20 +15,6 @@ About
 
 Features
 --------
-
-
-### Artillery discovery remote
-
-Artillery discovery remote lays down artillery fire in an arc, making it useful for discovering the unexplored parts of the map that border your main base or outposts.
-
-Artillery discovery remote uses the base (vanilla) game artillery shell ammo category (`artillery-shell`) for targeting purposes. This way if you have additional mods that introduce additional artillery shells (with their own category), no expensive ammunition will be wasted for a simple exploration task.
-
-A number of settings pertaining to artillery discovery remote are made available for tweaking, such as arc angle or density (radial distance) between individual shots fired. For more details please see the in-game settings descriptions.
-
-| Example usage with arc radius set to 30 | Example usage with arc radius set to 360 |
-|-----------------------------------------|------------------------------------------|
-|![](https://azaghal.github.io/Factorio-AdvancedArtilleryRemotesContinued/demo/discovery-remote-arc-radius-30.gif) | ![](https://azaghal.github.io/Factorio-AdvancedArtilleryRemotesContinued/demo/discovery-remote-arc-radius-360.gif) |
-
 
 ### Artillery cluster remotes
 
@@ -57,7 +44,7 @@ Should you come upon bugs, or have features and ideas on how to make the mod bet
 Known issues
 ------------
 
--   Cluster targeting is suboptimal - less artillery shots could be used to destroy enemy within the same area. This is partially done in order to reduce complexity of comuputation, and partially in order not to make cluster targeting too overpowered - artillery cluster remotes save some time and provide convenience at the expense of increased resource usage.
+~~-   Cluster targeting is suboptimal - less artillery shots could be used to destroy enemy within the same area. This is partially done in order to reduce complexity of comuputation, and partially in order not to make cluster targeting too overpowered - artillery cluster remotes save some time and provide convenience at the expense of increased resource usage.~~
 -   Cluster targeting does not always manage to damage all enemy entities in an area. This is a consequence on how the damage radius is calculated for individual ammo categories. This is done by using same algorithm that shows the player damage/explosion area when holding the remote, which will often include visual effects such as smoke etc. However, this can be somewhat negated by using the mod settings to specify custom damage radius for ammo categories (see in-game mod settings for more details).
 -   Distinct artillery cluster remotes can only be created per ammo category - if a mod introduces additional artillery shells (which have different damage radius compared to vanilla artillery shells) that belong to the default artillery shell ammo category, then only one artillery cluster remote type is added by the mod. The reason for this is that target (flare) spawning (created by the remote) revolves around ammo categories, and it is not possible to tell the game to use only a particular ammo type unless it belongs in its own category.
 -   Only up to six artillery cluster remote types can exist in any given game. There is no real limitation behind this in the code, except that the six corresponding colours have been generated statically using six-tone colour palette generator algorithm. Should a need arise, this mod can easily be updated to support more types of artillery cluster remotes.
