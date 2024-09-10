@@ -1,6 +1,10 @@
 Advanced Artillery Remotes (Continued)
 ======================================
 
+FORK
+----
+This fork removes the discovery remote and focuses only on the cluster remote, changing it to use clustering algorithm to assure optimized desctruction.
+Research and recipe for remote is also updated.
 
 About
 -----
