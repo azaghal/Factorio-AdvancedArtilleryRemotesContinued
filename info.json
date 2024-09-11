@@ -7,7 +7,7 @@
     "factorio_version": "1.1",
     "dependencies": [
         "base >= 1.1.74",
-        "! AdvancedArtilleryRemotesContinued"
+        "! AdvancedArtilleryRemotesContinued",
         "! AdvArtilleryRemotes"
     ],
     "description": "Adds an Advanced Artillery Remote to the game that finds nearby spawners and worms and lays down an optimized set of artillery flares."
