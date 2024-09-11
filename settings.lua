@@ -10,16 +10,16 @@ data:extend({
 
     {
         type = "string-setting",
-        name = "aar-cluster-mode",
+        name = "asc-cluster-mode",
         setting_type = "runtime-global",
         order = "ab",
-        default_value = "spawner-only",
+        default_value = "spawner-and-worms",
         allowed_values = {"spawner-only", "spawner-and-worms"}
     },
 
     {
         type = "int-setting",
-        name = "aar-cluster-radius",
+        name = "asc-cluster-radius",
         setting_type = "runtime-global",
         order = "ac",
         default_value = 32,
@@ -28,32 +28,22 @@ data:extend({
     },
 
     {
-        type = "string-setting",
-        name = "aar-damage-radius-overrides",
+        type = "int-setting",
+        name = "asc-cluster-iterations",
         setting_type = "runtime-global",
         order = "ad",
-        default_value = "",
-        allow_blank = true,
+        default_value = 3,
+        minimum_value = 0,
+        maximum_value = 10,
     },
 
     {
-        type = "int-setting",
-        name = "aar-arc-radius",
+        type = "string-setting",
+        name = "asc-damage-radius-overrides",
         setting_type = "runtime-global",
         order = "ae",
-        default_value = 30,
-        minimum_value = 1,
-        maximum_value = 360,
-    },
-
-    {
-        type = "int-setting",
-        name = "aar-angle-width",
-        setting_type = "runtime-global",
-        order = "af",
-        default_value = 40,
-        minimum_value = 1,
-        maximum_value = 100,
+        default_value = "",
+        allow_blank = true,
     },
 
     -- Per-player settings
@@ -61,7 +51,7 @@ data:extend({
 
     {
         type = "string-setting",
-        name = "aar-cluster-mode-player",
+        name = "asc-cluster-mode-player",
         setting_type = "runtime-per-user",
         order = "aa",
         default_value = "use-map-setting",
@@ -70,7 +60,7 @@ data:extend({
 
     {
         type = "bool-setting",
-        name = "aar-verbose",
+        name = "asc-verbose",
         order = "ab",
         setting_type = "runtime-per-user",
         default_value = false
@@ -78,7 +68,7 @@ data:extend({
 
     {
         type = "bool-setting",
-        name = "aar-cluster-single-target-fallback",
+        name = "asc-cluster-single-target-fallback",
         order = "ab",
         setting_type = "runtime-per-user",
         default_value = false
