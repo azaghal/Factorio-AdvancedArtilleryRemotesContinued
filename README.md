@@ -7,7 +7,7 @@ Forked from [Advanced Artillery Remotes (Continued)](https://github.com/azaghal/
 This fork removes the discovery remote and focuses only on the cluster remote, changing it to use clustering algorithm to assure optimized desctruction.
 Research and recipe for remote is also updated.
 
-About
+About Original Mod Features
 -----
 
 *Advanced Artillery Remotes* introduces additional artillery remotes to the game, allowing the player to use artillery for exploration (map discovery) purposes, as well as for easier destruction (through carpet bombing) of alien lifeforms.

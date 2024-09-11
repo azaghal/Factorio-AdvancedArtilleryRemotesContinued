@@ -91,11 +91,11 @@ for ammo_category, tint_colour in pairs(ammo_categories) do
   -- to simulate the red colour of vanilla artillery remote, set tint to {r=255, g=45, b=8, a=255}.
   local remote_icons = {
     {
-      icon = "__AdvancedArtilleryRemotesContinued__/graphics/icons/artillery-remote-target.png",
+      icon = "__ArtillerySmartClusteringRemote__/graphics/icons/artillery-remote-target.png",
       tint = tint_colour
     },
     {
-      icon = "__AdvancedArtilleryRemotesContinued__/graphics/icons/artillery-cluster-remote-shells.png",
+      icon = "__ArtillerySmartClusteringRemote__/graphics/icons/artillery-cluster-remote-shells.png",
     },
   }
 
@@ -121,7 +121,7 @@ for ammo_category, tint_colour in pairs(ammo_categories) do
     pictures =
       {
         {
-          filename = "__AdvancedArtilleryRemotesContinued__/graphics/artillery-target.png",
+          filename = "__ArtillerySmartClusteringRemote__/graphics/artillery-target.png",
           tint = tint_colour,
           priority = "low",
           width = 258,
@@ -158,14 +158,39 @@ for ammo_category, tint_colour in pairs(ammo_categories) do
     ingredients =
       {
         {"artillery-targeting-remote", 1},
-        {"processing-unit", 1},
+        {"speed-module-3", 1},
+        {"effectivity-module-3", 1},
       },
     result = remote_name
   }
 
+  -- Cluster remote technology.
+  local original_tech = table.deepcopy(data.raw.technology['artillery'])
+  original_tech.unit.ingredients = {
+    {'automation-science-pack', 1},
+    {'logistic-science-pack', 1},
+    {'chemical-science-pack', 1},
+    {'military-science-pack', 1},
+    {'utility-science-pack', 1},
+  }
+  original_tech.icons = remote_icons
+  original_tech.icon_size = 64
+  original_tech.icon_mipmaps = 4
+
+  local technology = table.deepcopy(original_tech)
+  technology.name = 'artillery-cluster-remote'
+  technology.effects = {
+    {
+      type = 'unlock-recipe',
+      recipe = remote_name
+    }
+  }
+  technology.prerequisites = {'artillery','speed-module-3','effectivity-module-3'}
+  technology.unit.count = 2500
+  technology.order = 'd-e-f-y'
+
   data:extend({flare})
   data:extend({remote})
   data:extend({remote_recipe})
-
-  table.insert(data.raw["technology"]["artillery"].effects, {type = "unlock-recipe", recipe = remote_name})
+  data:extend({technology})
 end

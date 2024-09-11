@@ -24,11 +24,11 @@ if mods["Shortcuts-ick"] == "1.1.27" then
   -- to simulate the red colour of vanilla artillery remote, set tint to {r=255, g=45, b=8, a=255}.
   local remote_icons = {
     {
-      icon = "__AdvancedArtilleryRemotesContinued__/graphics/icons/artillery-remote-target.png",
+      icon = "__ArtillerySmartClusteringRemote__/graphics/icons/artillery-remote-target.png",
       tint = tint_colour
     },
     {
-      icon = "__AdvancedArtilleryRemotesContinued__/graphics/icons/artillery-cluster-remote-shells.png",
+      icon = "__ArtillerySmartClusteringRemote__/graphics/icons/artillery-cluster-remote-shells.png",
     },
   }
 
