@@ -1,9 +1,11 @@
 ---------------------------------------------------------------------------------------------------
-Version: 999.999.999
-Date: 9999-99-99
+Version: 0.1.0
+Date: 2024-09-11
   Changes:
+    - Forked from original mod
   Features:
-  Bugfixes:
+    - Removed discovery remote
+    - Updated cluster remote with clustering algorithm for enhanced efficiency
 ---------------------------------------------------------------------------------------------------
 Version: 4.0.3
 Date: 2023-02-13
