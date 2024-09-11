@@ -4,7 +4,7 @@ ArtillerySmartClusteringRemote
 FORK
 ----
 Forked from [Advanced Artillery Remotes (Continued)](https://github.com/azaghal/Factorio-AdvancedArtilleryRemotesContinued)
-This fork removes the discovery remote and focuses only on the cluster remote, changing it to use a clustering algorithm to assure optimized desctruction.
+This fork removes the discovery remote and focuses only on the cluster remote, changing it to use a clustering algorithm to assure optimized destruction.
 Research and recipe for remote is also updated.
 
 About Original Mod Features
