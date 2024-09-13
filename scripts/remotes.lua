@@ -59,14 +59,14 @@ function proximity(a, b, tolerance)
   end
   local does_overlap = false
   local distanceSq = 0.0
-  if b.center then
-    distanceSq = distSq(a.center, b.center)
+  if b.position then
+    distanceSq = distSq(a.position, b.position)
     does_overlap = distanceSq <= ((1-tolerance) * a.radius + b.radius)^2
   elseif b.left_top then
     local closest_point = {}
-    closest_point.x = math.max(b.left_top.x, math.min(b.right_bottom.x, a.center.x))
-    closest_point.y = math.max(b.right_bottom.y, math.min(b.left_top.y, a.center.y))
-    distanceSq = distanceSq(a.center, closest_point)
+    closest_point.x = math.max(b.left_top.x, math.min(b.right_bottom.x, a.position.x))
+    closest_point.y = math.max(b.right_bottom.y, math.min(b.left_top.y, a.position.y))
+    distanceSq = distanceSq(a.position, closest_point)
     does_overlap = distanceSq <= ((1-tolerance) * a.radius)^2
   end
   return {does_overlap, distanceSq}
