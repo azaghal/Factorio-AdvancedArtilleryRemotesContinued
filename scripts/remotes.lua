@@ -8,19 +8,6 @@
 
 local remotes = {}
 
-function target_radius(entity)
-  -- None of the returned tile-sizes or collision-box dimensions from the API seem to directly match & work with in-game results, oddly.
-  -- These numbers were derived by counting tiles in the map view while paused, and generate optimal results.
-  -- WEIRD.
-  if entity.type == "unit-spawner" then
-    return 3
-  elseif string.find(entity.name, "small") then
-    return 1.5
-  else
-    return 2
-  end
-end
-
 function distSq(a, b)
   distance = (a.x - b.x) ^ 2 + (a.y - b.y) ^ 2
   return distance
