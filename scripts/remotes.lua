@@ -47,8 +47,8 @@ end
 
 --- Determines how close 2 objects are
 --
--- @param a circular object {center: {x,y}, radius}
--- @param b circular or rectangle object, rectangle is {left_top: {x,y}, right_bottom: {x,y}}
+-- @param a cluster {center: {x,y}, radius}
+-- @param b circular {position: {x,y}, radius} or rectangular {left_top: {x,y}, right_bottom: {x,y}} object
 -- @param tolerance how a must overlap b for overlap == true
 --
 -- @return {does_overlap, distance}
@@ -58,18 +58,18 @@ function proximity(a, b, tolerance)
     tolerance = 0.10
   end
   local does_overlap = false
-  local distanceSq = 0.0
+  local distance_sq = 0.0
   if b.position then
-    distanceSq = distSq(a.position, b.position)
-    does_overlap = distanceSq <= ((1-tolerance) * a.radius + b.radius)^2
+    distance_sq = distSq(a.center, b.position)
+    does_overlap = distance_sq <= ((1-tolerance) * a.radius + b.radius)^2
   elseif b.left_top then
     local closest_point = {}
-    closest_point.x = math.max(b.left_top.x, math.min(b.right_bottom.x, a.position.x))
-    closest_point.y = math.max(b.right_bottom.y, math.min(b.left_top.y, a.position.y))
-    distanceSq = distanceSq(a.position, closest_point)
-    does_overlap = distanceSq <= ((1-tolerance) * a.radius)^2
+    closest_point.x = math.max(b.left_top.x, math.min(b.right_bottom.x, a.center.x))
+    closest_point.y = math.max(b.right_bottom.y, math.min(b.left_top.y, a.center.y))
+    distance_sq = distance_sq(a.center, closest_point)
+    does_overlap = distance_sq <= ((1-tolerance) * a.radius)^2
   end
-  return {does_overlap, distanceSq}
+  return {does_overlap, distance_sq}
 end
 
 --- Parses damage radius overrides for ammo categories.
@@ -201,12 +201,12 @@ function assign_clusters(targets, radius, clusters)
       table.insert(clusters, { center = target.position, targets = { target } })
     else
       local near = nil
-      local near_dist = -1
+      local near_dist_sq = -1
       for _, cluster in pairs(clusters) do
-        local new_dist = distSq(target.position, cluster.center)
-        if (new_dist - (radius + target.radius) <= 0) and ((not near) or (new_dist < near_dist)) then
+        local prox = proximity(cluster, target)
+        if prox.does_overlap and ((not near) or (prox.distance_sq < near_dist_sq)) then
           near = cluster
-          near_dist = new_dist
+          near_dist_sq = prox.distance_sq
         end
       end
       if near then
@@ -409,7 +409,15 @@ function remotes.cluster_targeting(player, surface, requested_position, remote_p
 
   -- Create list of target positions.
   for _, entity in pairs(target_entities) do
-    table.insert(targets, { position = entity.position, radius = target_radius(entity) })
+    -- table.insert(targets, { position = entity.position, radius = target_radius(entity) })
+    game.print("Target: "..entity.name)
+    game.print("Target bounds: ".."("..entity.bounding_box.left_top.x..","..entity.bounding_box.left_top.y..") - ("..entity.bounding_box.right_bottom.x..","..entity.bounding_box.right_bottom.y)
+    if entity.bounding_box.orientation then
+      game.print("Target orientation: "..entity.name.bounding_box.orientation)
+    else
+      game.print("Target orientation: NONE")
+    end
+    table.insert(targets, entity.bounding_box) -- attempt using bounding_box, .prototype.collision_box may be useful? Check .orientation?
   end
 
   -- Optimise number of target positions for flares (reducing required ammo quantity).
