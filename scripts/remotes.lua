@@ -21,18 +21,18 @@ function target_radius(entity)
   end
 end
 
-function dist(a, b)
-  distance = math.sqrt((a.x - b.x) ^ 2 + (a.y - b.y) ^ 2)
+function distSq(a, b)
+  distance = (a.x - b.x) ^ 2 + (a.y - b.y) ^ 2
   return distance
 end
 
 function center_point(targets)
   local average = { x = 0.0, y = 0.0 }
-  local length = table.maxn(targets)
+  local length = #targets
   if length == 0 then
     return average
   end
-  -- approximate finding center point between circles via weighted average rather than linear algebra
+  -- approximate finding center point between circle edges
   local weight = 0
   for _, target in pairs(targets) do
     local modifier = (1/target.radius)
@@ -43,6 +43,33 @@ function center_point(targets)
   average.x = average.x / weight
   average.y = average.y / weight
   return average
+end
+
+--- Determines how close 2 objects are
+--
+-- @param a circular object {center: {x,y}, radius}
+-- @param b circular or rectangle object, rectangle is {left_top: {x,y}, right_bottom: {x,y}}
+-- @param tolerance how a must overlap b for overlap == true
+--
+-- @return {does_overlap, distance}
+--
+function proximity(a, b, tolerance)
+  if tolerance == nil then
+    tolerance = 0.10
+  end
+  local does_overlap = false
+  local distanceSq = 0.0
+  if b.center then
+    distanceSq = distSq(a.center, b.center)
+    does_overlap = distanceSq <= ((1-tolerance) * a.radius + b.radius)^2
+  elseif b.left_top then
+    local closest_point = {}
+    closest_point.x = math.max(b.left_top.x, math.min(b.right_bottom.x, a.center.x))
+    closest_point.y = math.max(b.right_bottom.y, math.min(b.left_top.y, a.center.y))
+    distanceSq = distanceSq(a.center, closest_point)
+    does_overlap = distanceSq <= ((1-tolerance) * a.radius)^2
+  end
+  return {does_overlap, distanceSq}
 end
 
 --- Parses damage radius overrides for ammo categories.
@@ -170,13 +197,13 @@ end
 function assign_clusters(targets, radius, clusters)
   -- assign targets to clusters
   for _, target in pairs(targets) do
-    if table.maxn(clusters) == 0 then
+    if #clusters == 0 then
       table.insert(clusters, { center = target.position, targets = { target } })
     else
       local near = nil
       local near_dist = -1
       for _, cluster in pairs(clusters) do
-        local new_dist = dist(target.position, cluster.center)
+        local new_dist = distSq(target.position, cluster.center)
         if (new_dist - (radius + target.radius) <= 0) and ((not near) or (new_dist < near_dist)) then
           near = cluster
           near_dist = new_dist
@@ -240,7 +267,7 @@ function remotes.optimise_targeting(targets, damage_radius, iteration_passes)
     assign_clusters(targets, damage_radius, merged_clusters)
 
     -- update targeting or bail
-    local new_num_targets = table.maxn(merged_clusters)
+    local new_num_targets = #merged_clusters
     if num_targets == nil or (new_num_targets < num_targets) then
       target_clusters = merged_clusters
       num_targets = new_num_targets
