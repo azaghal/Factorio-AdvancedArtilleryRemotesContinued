@@ -7,13 +7,33 @@
 -- ===================
 
 local remotes = {}
+local overlap_tolerance = 0.9
 
-function distSq(a, b)
+function dist_sq(a, b)
   distance = (a.x - b.x) ^ 2 + (a.y - b.y) ^ 2
   return distance
 end
 
+function shape_center(shape)
+  if shape.center then
+    return shape.center
+  else
+    return {x = 0.5 * (shape.left_top.x + shape.right_bottom.x), y = 0.5 * (shape.left_top.y + shape.right_bottom.y)}
+  end
+end
+
 function center_point(targets)
+  if #targets == 0 then
+    return {x = 0.0, y = 0.0}
+  end
+  if targets[1].center then
+    return circle_centroid(targets)
+  else
+    return rect_centroid(targets)
+  end
+end
+
+function circle_centroid(targets)
   local average = { x = 0.0, y = 0.0 }
   local length = #targets
   if length == 0 then
@@ -24,39 +44,105 @@ function center_point(targets)
   for _, target in pairs(targets) do
     local modifier = (1/target.radius)
     weight = weight + modifier
-    average.x = average.x + modifier * target.position.x
-    average.y = average.y + modifier * target.position.y
+    average.x = average.x + modifier * target.center.x
+    average.y = average.y + modifier * target.center.y
   end
   average.x = average.x / weight
   average.y = average.y / weight
   return average
 end
 
---- Determines how close 2 objects are
+function rect_centroid(targets)
+  local avg_rect = {left_top={x=0.0,y=0.0},right_bottom={x=0.0,y=0.0}}
+  for _, rect in pairs(targets) do
+    avg_rect.left_top.x = avg_rect.left_top.x + rect.left_top.x
+    avg_rect.left_top.y = avg_rect.left_top.y + rect.left_top.y
+    avg_rect.right_bottom.x = avg_rect.right_bottom.x + rect.right_bottom.x
+    avg_rect.right_bottom.y = avg_rect.right_bottom.y + rect.right_bottom.y
+  end
+  avg_rect.left_top.x = avg_rect.left_top.x / #targets
+  avg_rect.left_top.y = avg_rect.left_top.y / #targets
+  avg_rect.right_bottom.x = avg_rect.right_bottom.x / #targets
+  avg_rect.right_bottom.y = avg_rect.right_bottom.y / #targets
+  return shape_center(avg_rect)
+end
+
+--- Determines if 2 objects overlap
 --
 -- @param a cluster {center: {x,y}, radius}
--- @param b circular {position: {x,y}, radius} or rectangular {left_top: {x,y}, right_bottom: {x,y}} object
--- @param tolerance how a must overlap b for overlap == true
+-- @param b circular {center: {x,y}, radius} or rectangular {left_top: {x,y}, right_bottom: {x,y}} object
 --
--- @return {does_overlap, distance}
+-- @return boolean
 --
-function proximity(a, b, tolerance)
-  if tolerance == nil then
-    tolerance = 0.10
-  end
-  local does_overlap = false
+function does_overlap(a, b)
   local distance_sq = 0.0
-  if b.position then
-    distance_sq = distSq(a.center, b.position)
-    does_overlap = distance_sq <= ((1-tolerance) * a.radius + b.radius)^2
+  if b.center then
+    distance_sq = dist_sq(a.center, b.center)
+    return distance_sq <= (overlap_tolerance * a.radius + b.radius)^2
   elseif b.left_top then
     local closest_point = {}
     closest_point.x = math.max(b.left_top.x, math.min(b.right_bottom.x, a.center.x))
-    closest_point.y = math.max(b.right_bottom.y, math.min(b.left_top.y, a.center.y))
-    distance_sq = distance_sq(a.center, closest_point)
-    does_overlap = distance_sq <= ((1-tolerance) * a.radius)^2
+    closest_point.y = math.max(b.left_top.y, math.min(b.right_bottom.y, a.center.y))
+    distance_sq = dist_sq(a.center, closest_point)
+    return distance_sq <= (overlap_tolerance * a.radius)^2
   end
-  return {does_overlap, distance_sq}
+  error("need to pass circle or rect to does_overlap", 2)
+end
+
+function try_add_to_cluster(cluster, target)
+  local destination = {}
+  local padding = nil
+  local distance = nil
+  local separation = nil
+  local move_ratio = nil
+  local new_center = nil
+
+  -- minimum movement to bring cluster into range
+  if target.center then
+    destination = target.center
+    padding = overlap_tolerance * cluster.radius + target.radius
+  elseif target.left_top then
+    destination.x = math.max(target.left_top.x, math.min(target.right_bottom.x, cluster.center.x))
+    destination.y = math.max(target.left_top.y, math.min(target.right_bottom.y, cluster.center.y))
+    padding = overlap_tolerance * cluster.radius
+  else
+    error("target should be circle or rectangle", 2)
+  end
+  
+  distance = math.sqrt(dist_sq(cluster.center, destination))
+  separation = math.max(0, distance - padding)
+  if separation == 0 then
+    -- if no separation, no movement needed, success
+    return {success = true, distance = distance, new_center = cluster.center}
+  elseif separation > cluster.radius * 2 then
+    -- if (separation > cluster.radius * 2), movement would almost surely remove the original target from the cluster, fail early
+    return {success = false, distance = distance}
+  end
+
+  move_ratio = separation / distance
+  new_center = {}
+  new_center.x = move_ratio * (destination.x - cluster.center.x) + cluster.center.x
+  new_center.y = move_ratio * (destination.y - cluster.center.y) + cluster.center.y
+
+  -- check to ensure the possible cluster move still hits all original targets
+  local new_impact = {center = new_center, radius = cluster.radius}
+  for _, cluster_target in pairs(cluster.targets) do
+    if not does_overlap(new_impact, cluster_target) then
+      -- if we missed an original target, we fail
+      return {success = false, distance = distance}
+    end
+  end
+  -- we missed no original targets, success
+  return {success = true, distance = distance, new_center = new_center}
+end
+
+function add_to_cluster(cluster, target, try_add_result)
+  if not try_add_result.success or not try_add_result.new_center then
+    error("passed a failed try_add to add", 2)
+    return
+  end
+  table.insert(cluster.targets, target)
+  cluster.center = try_add_result.new_center
 end
 
 --- Parses damage radius overrides for ammo categories.
@@ -182,29 +268,30 @@ function remotes.notify_player(player, message, is_error)
 end
 
 function assign_clusters(targets, radius, clusters)
+  if center_shift == nil then
+    center_shift = false
+  end
   -- assign targets to clusters
   for _, target in pairs(targets) do
     if #clusters == 0 then
-      table.insert(clusters, { center = target.position, targets = { target } })
+      table.insert(clusters, { center = shape_center(target), radius = radius, targets = { target } })
     else
-      local near = nil
-      local near_dist_sq = -1
+      local best_cluster = nil
+      local best_result = nil
       for _, cluster in pairs(clusters) do
-        local prox = proximity(cluster, target)
-        if prox.does_overlap and ((not near) or (prox.distance_sq < near_dist_sq)) then
-          near = cluster
-          near_dist_sq = prox.distance_sq
+        -- try add
+        local try_add_result = try_add_to_cluster(cluster, target)
+        if try_add_result.success and (not best_result or try_add_result.distance < best_result.distance) then
+          best_cluster = cluster
+          best_result = try_add_result
         end
       end
-      if near then
-        table.insert(near.targets, target)
+      if best_cluster then
+        add_to_cluster(best_cluster, target, best_result)
       else
-        table.insert(clusters, { center = target.position, targets = { target } })
+        table.insert(clusters, { center = shape_center(target), radius = radius, targets = { target } })
       end
     end
-  end
-  for _, cluster in pairs(clusters) do
-    cluster.center = center_point(cluster.targets)
   end
 end
 
@@ -229,44 +316,41 @@ end
 -- @return {MapPosition} Optimised list of targets (positions).
 --
 function remotes.optimise_targeting(targets, damage_radius, iteration_passes)
-  local target_clusters = {}
-  local num_targets = nil
+  local best_clusters = nil
+  local current_clusters = {}
 
   -- iteration passes
   for pass = 1, iteration_passes, 1 do
-    -- populate new potential cluster centers
-    local potential_cluster_centers = {}
-    for _, cluster in pairs(target_clusters) do
-      -- use damage_radius as cluster radius to avoid overlapping impacts
-      -- table.insert(potential_cluster_centers, {position = center_point(cluster.targets), radius = damage_radius})
-      table.insert(potential_cluster_centers, { position = cluster.center, radius = damage_radius })
-    end
-
-    -- merge
+    
+    -- 3. merge clusters
     local merged_clusters = {}
-    assign_clusters(potential_cluster_centers, damage_radius, merged_clusters)
-    -- clean and adjust merged clusters
+    assign_clusters(current_clusters, damage_radius, merged_clusters)
+    
+    -- 4. center on targets then discard them
     for _, cluster in pairs(merged_clusters) do
+      cluster.center = center_point(cluster.targets)
       cluster.targets = {}
     end
-
-    -- assign targets to merged clusters
+    
+    -- 1. assign targets to clusters
     assign_clusters(targets, damage_radius, merged_clusters)
 
-    -- update targeting or bail
-    local new_num_targets = #merged_clusters
-    if num_targets == nil or (new_num_targets < num_targets) then
-      target_clusters = merged_clusters
-      num_targets = new_num_targets
-    else
-      break
+    -- 2. remove empty clusters
+    current_clusters = {}
+    for _, cluster in pairs(merged_clusters) do
+      if #cluster.targets > 0 then
+        table.insert(current_clusters, cluster)
+      end
+    end
+
+    if not best_clusters or #current_clusters < #best_clusters then
+      best_clusters = current_clusters
     end
   end
 
   -- build final targeting list
   local optimised_targets = {}
-  for _, cluster in pairs(target_clusters) do
-    --table.insert(optimised_targets, center_point(cluster.targets))
+  for _, cluster in pairs(best_clusters) do
     table.insert(optimised_targets, cluster.center)
   end
   return optimised_targets
@@ -396,14 +480,6 @@ function remotes.cluster_targeting(player, surface, requested_position, remote_p
 
   -- Create list of target positions.
   for _, entity in pairs(target_entities) do
-    -- table.insert(targets, { position = entity.position, radius = target_radius(entity) })
-    game.print("Target: "..entity.name)
-    game.print("Target bounds: ".."("..entity.bounding_box.left_top.x..","..entity.bounding_box.left_top.y..") - ("..entity.bounding_box.right_bottom.x..","..entity.bounding_box.right_bottom.y)
-    if entity.bounding_box.orientation then
-      game.print("Target orientation: "..entity.name.bounding_box.orientation)
-    else
-      game.print("Target orientation: NONE")
-    end
     table.insert(targets, entity.bounding_box) -- attempt using bounding_box, .prototype.collision_box may be useful? Check .orientation?
   end
 
