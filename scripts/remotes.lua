@@ -366,7 +366,13 @@ function remotes.notify_player(player, message, is_error)
 
 end
 
-
+--- Assigns new targets to a existing cluster array
+--
+-- @param targets {{center: {x,y}, radius} or rectangular {left_top: {x,y}, right_bottom: {x,y}}, ...}
+-- @param damage_radius the radius used for clusters (impact locations) to cover targets
+-- @param clusters {{center: {x,y}, radius, targets: {...}}, ...}
+--
+-- @return updated array of clusters
 function assign_clusters(targets, radius, clusters)
   if center_shift == nil then
     center_shift = false
