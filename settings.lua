@@ -1,5 +1,6 @@
 -- Copyright (c) 2020 Dockmeister
 -- Copyright (c) 2023 Branko Majic
+-- Copyright (c) 2024 Bryan O'Malley
 -- Provided under MIT license. See LICENSE for details.
 
 
@@ -38,9 +39,19 @@ data:extend({
 
     {
         type = "int-setting",
-        name = "aar-arc-radius",
+        name = "aar-cluster-iterations",
         setting_type = "runtime-global",
         order = "ae",
+        default_value = 3,
+        minimum_value = 0,
+        maximum_value = 10,
+    },
+
+    {
+        type = "int-setting",
+        name = "aar-arc-radius",
+        setting_type = "runtime-global",
+        order = "af",
         default_value = 30,
         minimum_value = 1,
         maximum_value = 360,
@@ -50,7 +61,7 @@ data:extend({
         type = "int-setting",
         name = "aar-angle-width",
         setting_type = "runtime-global",
-        order = "af",
+        order = "ag",
         default_value = 40,
         minimum_value = 1,
         maximum_value = 100,

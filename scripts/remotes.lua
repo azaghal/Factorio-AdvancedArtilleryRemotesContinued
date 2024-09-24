@@ -1,5 +1,6 @@
 -- Copyright (c) 2020 Dockmeister
 -- Copyright (c) 2023 Branko Majic
+-- Copyright (c) 2024 Bryan O'Malley
 -- Provided under MIT license. See LICENSE for details.
 
 
@@ -7,7 +8,210 @@
 -- ===================
 
 local remotes = {}
+local overlap_tolerance = 0.9
 
+--- Calculates square distance between 2 positions
+--
+-- @param a first position
+-- @param b second position--
+--
+-- @return squared distance between the positions
+--
+function dist_sq(a, b)
+  distance = (a.x - b.x) ^ 2 + (a.y - b.y) ^ 2
+  return distance
+end
+
+--- Calculates the center of the passed in circle or rectangle
+--
+-- @param shape the shape
+--
+-- @return the center of the shape
+--
+function shape_center(shape)
+  if shape.center then
+    return shape.center
+  else
+    return {x = 0.5 * (shape.left_top.x + shape.right_bottom.x), y = 0.5 * (shape.left_top.y + shape.right_bottom.y)}
+  end
+end
+
+--- Calculates the approximate center point between an array of circles
+--
+-- Calculation is a weighted average of the circle centers based on inverse radii weights (closer to smaller circles)
+--
+-- @param targets the array of circles
+--
+-- @return the approximate center point between the circles
+--
+function circle_centroid(targets)
+  local average = { x = 0.0, y = 0.0 }
+  local length = #targets
+  if length == 0 then
+    return average
+  end
+  -- approximate finding center point between circle edges
+  local weight = 0
+  for _, target in pairs(targets) do
+    if target.radius == nil then
+      return average -- quit early if we've not been passed all circles
+    end
+    -- limit modifier to radius 1 or greater to avoid issues with 0-radius inputs
+    local modifier = target.radius < 1.0 and (1/target.radius) or 2.0
+    weight = weight + modifier
+    average.x = average.x + modifier * target.center.x
+    average.y = average.y + modifier * target.center.y
+  end
+  average.x = average.x / weight
+  average.y = average.y / weight
+  return average
+end
+
+--- Calculates the approximate center point between an array of rectangles
+--
+-- Calculation is created by creating an average of each corner, then caulcating the center of the 'average' rectangle
+--
+-- @param targets the array of rectangles
+--
+-- @return the approximate center point between the rectangles
+--
+function rect_centroid(targets)
+  local avg_rect = {left_top={x=0.0,y=0.0},right_bottom={x=0.0,y=0.0}}
+  local length = #targets
+  if length == 0 then
+    return avg_rect
+  end
+  for _, rect in pairs(targets) do
+    if rect.left_top == nil then
+      return avg_rect -- quit early if we've not been passed all rectangles
+    end
+    avg_rect.left_top.x = avg_rect.left_top.x + rect.left_top.x
+    avg_rect.left_top.y = avg_rect.left_top.y + rect.left_top.y
+    avg_rect.right_bottom.x = avg_rect.right_bottom.x + rect.right_bottom.x
+    avg_rect.right_bottom.y = avg_rect.right_bottom.y + rect.right_bottom.y
+  end
+  avg_rect.left_top.x = avg_rect.left_top.x / #targets
+  avg_rect.left_top.y = avg_rect.left_top.y / #targets
+  avg_rect.right_bottom.x = avg_rect.right_bottom.x / #targets
+  avg_rect.right_bottom.y = avg_rect.right_bottom.y / #targets
+  return shape_center(avg_rect)
+end
+
+--- Calculates the approximate center between an array of shapes
+--
+-- passed in shape array must be either all circles or all rectangles
+-- 
+-- @param targets the array of shapes
+--
+-- @return the approximate center point between the shapes
+--
+function center_point(targets)
+  if #targets == 0 then
+    return {x = 0.0, y = 0.0}
+  end
+  if targets[1].center then
+    return circle_centroid(targets)
+  else
+    return rect_centroid(targets)
+  end
+end
+
+--- Determines if 2 objects overlap
+--
+-- @param a cluster {center: {x,y}, radius}
+-- @param b circular {center: {x,y}, radius} or rectangular {left_top: {x,y}, right_bottom: {x,y}} object
+--
+-- @return boolean
+--
+function does_overlap(a, b)
+  local distance_sq = 0.0
+  if b.center then
+    distance_sq = dist_sq(a.center, b.center)
+    return distance_sq <= (overlap_tolerance * a.radius + b.radius)^2
+  elseif b.left_top then
+    local closest_point = {}
+    closest_point.x = math.max(b.left_top.x, math.min(b.right_bottom.x, a.center.x))
+    closest_point.y = math.max(b.left_top.y, math.min(b.right_bottom.y, a.center.y))
+    distance_sq = dist_sq(a.center, closest_point)
+    return distance_sq <= (overlap_tolerance * a.radius)^2
+  end
+  error("need to pass circle or rect to does_overlap", 2)
+end
+
+--- Determines if a mew target can be added to an existing target cluster
+--
+-- The new target can be added if the adjustment of the cluster center would not remove any existing targets from the cluster's radius
+--
+-- @param cluster {center: {x,y}, radius, targets: {...}}
+-- @param target {center: {x,y}, radius} or rectangular {left_top: {x,y}, right_bottom: {x,y}}
+--
+-- @return true, if the new target can be added to the cluster without disrupting existing targets
+--
+function try_add_to_cluster(cluster, target)
+  local destination = {}
+  local padding = nil
+  local distance = nil
+  local separation = nil
+  local move_ratio = nil
+  local new_center = nil
+
+  -- minimum movement to bring cluster into range
+  if target.center then
+    destination = target.center
+    padding = overlap_tolerance * cluster.radius + target.radius
+  elseif target.left_top then
+    destination.x = math.max(target.left_top.x, math.min(target.right_bottom.x, cluster.center.x))
+    destination.y = math.max(target.left_top.y, math.min(target.right_bottom.y, cluster.center.y))
+    padding = overlap_tolerance * cluster.radius
+  else
+    error("target should be circle or rectangle", 2)
+  end
+  
+  distance = math.sqrt(dist_sq(cluster.center, destination))
+  separation = math.max(0, distance - padding)
+  if separation == 0 then
+    -- if no separation, no movement needed, success
+    return {success = true, distance = distance, new_center = cluster.center}
+  elseif separation > cluster.radius * 2 then
+    -- if (separation > cluster.radius * 2), movement would almost surely remove the original target from the cluster, fail early
+    return {success = false, distance = distance}
+  end
+
+  move_ratio = separation / distance
+  new_center = {}
+  new_center.x = move_ratio * (destination.x - cluster.center.x) + cluster.center.x
+  new_center.y = move_ratio * (destination.y - cluster.center.y) + cluster.center.y
+
+  -- check to ensure the possible cluster move still hits all original targets
+  local new_impact = {center = new_center, radius = cluster.radius}
+  for _, cluster_target in pairs(cluster.targets) do
+    if not does_overlap(new_impact, cluster_target) then
+      -- if we missed an original target, we fail
+      return {success = false, distance = distance}
+    end
+  end
+  -- we missed no original targets, success
+  return {success = true, distance = distance, new_center = new_center}
+end
+
+--- Adds a mew target can be added to an existing target cluster
+--
+-- The new target is added and the cluster center is adjusted the minimum amount necessary to cover the new target
+--
+-- @param cluster {center: {x,y}, radius, targets: {...}}
+-- @param target {center: {x,y}, radius} or rectangular {left_top: {x,y}, right_bottom: {x,y}}
+-- @param try_add_result the result returned by the try_add_to_cluster function, which must be called successfully before calling this function
+--
+-- @return none
+--
+function add_to_cluster(cluster, target, try_add_result)
+  if not try_add_result.success or not try_add_result.new_center then
+    error("passed a failed try_add to add", 2)
+    return
+  end
+  table.insert(cluster.targets, target)
+  cluster.center = try_add_result.new_center
+end
 
 --- Parses damage radius overrides for ammo categories.
 --
@@ -162,85 +366,103 @@ function remotes.notify_player(player, message, is_error)
 
 end
 
+--- Assigns new targets to a existing cluster array
+--
+-- @param targets {{center: {x,y}, radius} or rectangular {left_top: {x,y}, right_bottom: {x,y}}, ...}
+-- @param damage_radius the radius used for clusters (impact locations) to cover targets
+-- @param clusters {{center: {x,y}, radius, targets: {...}}, ...}
+--
+-- @return updated array of clusters
+function assign_clusters(targets, radius, clusters)
+  if center_shift == nil then
+    center_shift = false
+  end
+  -- assign targets to clusters
+  for _, target in pairs(targets) do
+    if #clusters == 0 then
+      table.insert(clusters, { center = shape_center(target), radius = radius, targets = { target } })
+    else
+      local best_cluster = nil
+      local best_result = nil
+      for _, cluster in pairs(clusters) do
+        -- try add
+        local try_add_result = try_add_to_cluster(cluster, target)
+        if try_add_result.success and (not best_result or try_add_result.distance < best_result.distance) then
+          best_cluster = cluster
+          best_result = try_add_result
+        end
+      end
+      if best_cluster then
+        add_to_cluster(best_cluster, target, best_result)
+      else
+        table.insert(clusters, { center = shape_center(target), radius = radius, targets = { target } })
+      end
+    end
+  end
+end
 
---- Optimises number of targets (based on damage radius) in order to reduce ammunition usage.
+--- Optimises number of targets (based on entity & damage radii) in order to reduce ammunition usage.
 --
 -- The algorithm:
 --
---   - Looks-up pairs of targets that are close enough to each-other to be replaced with a single target that is
---     positioned midway between them, and still be caught within the damage radius.
---   - Removes targets that are already within damage radius of another already optimised target.
---   - Targets that cannot be paired-up or are not already covered by damage radius of another optimised target are
---     preserved as-is (and considered as optimised).
+--   - Simple k-means-like algorithm
+--   - Begin empty table of clusters { center: {x,y}, targets: {{x,y}, ...} }
 --
--- @param targets {MapPosition} List of targets (positions) on a single surface.
--- @param damage_radius float Damage radius around designated targets.
+--   1. For each target, add it to the closest cluster within damage_radius, if none found, create new cluster
+--     - When added to cluster, update cluster position to include new target (minimum necessary)
+--   2. Remove any clusters that have no targets
+--   - Iterate X times by:
+--     3. Merge clusters by rerunning Step 1 with clusters as the targets
+--     4. Center each 'new' cluster between it's targets
+--   - Output cluster centers as new target list
 --
--- @return {MapPosition} Optimised list of targets (positions).
+-- @param targets {{center: {x,y}, radius} or rectangular {left_top: {x,y}, right_bottom: {x,y}}, ...}
+-- @param damage_radius the radius used for clusters (impact locations) to cover targets
+-- @param iteration_passes how many passes to use to 'refine' the clusters, 1-2 passes will be very rough,
+--   3+ will return 'good' results with almost no result needing more than 10 passes to 'stabilise'
 --
-function remotes.optimise_targeting(targets, damage_radius)
+-- @return {MapPosition, ...} Optimised list of target impact locations.
+--
+function remotes.optimise_targeting(targets, damage_radius, iteration_passes)
+  local best_clusters = nil
+  local current_clusters = {}
 
-  local optimised_targets = {}
+  -- iteration passes
+  for pass = 1, iteration_passes, 1 do
+    
+    -- 3. merge clusters
+    local merged_clusters = {}
+    assign_clusters(current_clusters, damage_radius, merged_clusters)
+    
+    -- 4. center on targets then discard them
+    for _, cluster in pairs(merged_clusters) do
+      cluster.center = center_point(cluster.targets)
+      cluster.targets = {}
+    end
+    
+    -- 1. assign targets to clusters
+    assign_clusters(targets, damage_radius, merged_clusters)
 
-  -- Calculates new target position that is positioned in-between the passed-in targets.
-  local function merge_targets(target1, target2)
-    local new_x = target1.x - math.floor((target1.x - target2.x) / 2)
-    local new_y = target1.y - math.floor((target1.y - target2.y) / 2)
-
-    return {x = new_x, y = new_y}
-  end
-
-  -- Checks if two targets could be merged into single one positioned midway between the two.
-  local function can_merge_targets(target1, target2, damage_radius)
-    local x, y = target1.x - target2.x, target1.y - target2.y
-
-    return (x^2 + y^2 < (damage_radius * 2)^2)
-  end
-
-  -- Keep track of processed targets - those have already been optimised and cannot be dropped without risking the full
-  -- explosion coverage. Should map keys to boolean values.
-  local processed = {}
-
-  -- Iterate over all targets and see if it is possible to merge them in pairs.
-  for i1, target1 in pairs(targets) do
-    if not processed[i1] then
-
-      -- Assume target is already optimised (this value is used in one of the later steps).
-      local optimised_target = target1
-
-      -- Merge the target with another one if possible.
-      for i2, target2 in pairs(targets) do
-
-        if i1 ~= i2 and not processed[i1] and not processed[i2] and can_merge_targets(target1, target2, damage_radius) then
-          optimised_target = merge_targets(target1, target2)
-          processed[i2] = true
-          break
-        end
-
+    -- 2. remove empty clusters
+    current_clusters = {}
+    for _, cluster in pairs(merged_clusters) do
+      if #cluster.targets > 0 then
+        table.insert(current_clusters, cluster)
       end
+    end
 
-      -- Mark the starting target as processed (at this point it is going to be kept, or replaced with a merged target).
-      processed[i1] = true
-
-      -- Check if any other (unprocessed) targets fall within the damage radius of optimised target.
-      for i, target in pairs(targets) do
-
-        -- Reuse the test, pass-in half the damage radius since we don't want to check the mid-point.
-        if not processed[i] and can_merge_targets(optimised_target, target, damage_radius/2) then
-          processed[i] = true
-        end
-
-      end
-
-      -- Finally add the optimised target to the list.
-      table.insert(optimised_targets, optimised_target)
-
+    if not best_clusters or #current_clusters < #best_clusters then
+      best_clusters = current_clusters
     end
   end
 
+  -- build final targeting list
+  local optimised_targets = {}
+  for _, cluster in pairs(best_clusters) do
+    table.insert(optimised_targets, cluster.center)
+  end
   return optimised_targets
 end
-
 
 --- Retrieves list of entities to target with cluster fire.
 --
@@ -369,7 +591,7 @@ function remotes.cluster_targeting(player, surface, requested_position, remote_p
 
   -- Create list of target positions.
   for _, entity in pairs(target_entities) do
-    table.insert(targets, entity.position)
+    table.insert(targets, entity.bounding_box)
   end
 
   -- Optimise number of target positions for flares (reducing required ammo quantity).
