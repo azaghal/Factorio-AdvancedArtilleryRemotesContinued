@@ -29,6 +29,7 @@ discovery_flare.shot_category = "artillery-shell"
 
 local discovery_remote = {
   type = "capsule",
+  auto_recycle = false,
   name = "artillery-discovery-remote",
   icons = discovery_remote_icons,
   icon_size = 64,
@@ -37,23 +38,24 @@ local discovery_remote = {
     type = "artillery-remote",
     flare = "artillery-discovery-flare"
   },
-  subgroup = "defensive-structure",
-  order = "b[turret]-d[artillery-turret]-bb[remote]",
+  order = "b[turret]-d[artillery-turret]-ba[remote]",
+  flags = { "only-in-cursor", "not-stackable", "spawnable" },
   stack_size = 1
 }
 
-
-local discovery_recipe = {
-  type = "recipe",
-  name = "artillery-discovery-remote",
-  enabled = false,
-  ingredients =
-  {
-    {"artillery-targeting-remote", 1},
-    {"processing-unit", 1},
-  },
-  result = "artillery-discovery-remote"
+local discovery_shortcut = {
+  type = "shortcut",
+  name = "give-artillery-discovery-remote",
+  order = "a[mod]-artillery-discovery-remote",
+  action = "spawn-item",
+  technology_to_unlock = "artillery",
+  unavailable_until_unlocked = true,
+  item_to_spawn = "artillery-discovery-remote",
+  icons = discovery_remote_icons,
+  icon_size = 64,
+  icon_mipmaps = 4,
+  small_icons = discovery_remote_icons,
+  small_icon_size = 32,
 }
 
-table.insert(data.raw["technology"]["artillery"].effects, {type = "unlock-recipe", recipe = "artillery-discovery-remote"})
-data:extend({discovery_remote, discovery_flare, discovery_recipe})
+data:extend({discovery_remote, discovery_flare, discovery_shortcut})

@@ -47,7 +47,7 @@ if mods["Shortcuts-ick"] == "1.1.27" then
     subgroup = "defensive-structure",
     order = "b[turret]-d[artillery-turret]-ba[remote]",
     stack_size = 1,
-    flags = {"hidden"}
+    hidden = true
   }
 
   data:extend({remote})

@@ -136,6 +136,7 @@ for ammo_category, tint_colour in pairs(ammo_categories) do
   -- Cluster remote.
   local remote = {
     type = "capsule",
+    auto_recycle = false,
     name = remote_name,
     localised_name = remote_localised_name,
     icons = remote_icons,
@@ -145,27 +146,29 @@ for ammo_category, tint_colour in pairs(ammo_categories) do
       type = "artillery-remote",
       flare = flare_name
     },
-    subgroup = "defensive-structure",
+    subgroup = "spawnables",
     order = "b[turret]-d[artillery-turret]-ba[remote]",
-    stack_size = 1
+    flags = { "only-in-cursor", "not-stackable", "spawnable" },
+    stack_size = 1,
   }
 
-  -- Cluster remote recipe.
-  local remote_recipe = {
-    type = "recipe",
-    name = remote_name,
-    enabled = false,
-    ingredients =
-      {
-        {"artillery-targeting-remote", 1},
-        {"processing-unit", 1},
-      },
-    result = remote_name
+  local cluster_shortcut = {
+    type = "shortcut",
+    name = "give-" .. remote_name,
+    order = "a[mod]-artillery-cluster-remote",
+    action = "spawn-item",
+    technology_to_unlock = "artillery",
+    unavailable_until_unlocked = true,
+    item_to_spawn = remote_name,
+    icons = remote_icons,
+    icon_size = 64,
+    icon_mipmaps = 4,
+    small_icons = remote_icons,
+    small_icon_size = 32,
   }
 
   data:extend({flare})
   data:extend({remote})
-  data:extend({remote_recipe})
+  data:extend({ cluster_shortcut })
 
-  table.insert(data.raw["technology"]["artillery"].effects, {type = "unlock-recipe", recipe = remote_name})
 end
