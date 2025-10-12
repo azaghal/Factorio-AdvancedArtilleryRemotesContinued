@@ -8,3 +8,5 @@ build/
 
 # Ignore project temporary directory.
 tmp/
+
+.vscode
