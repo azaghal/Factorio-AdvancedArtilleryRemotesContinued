@@ -72,6 +72,7 @@ local discovery_shortcut = {
   icon_mipmaps = 4,
   small_icons = discovery_remote_icons,
   small_icon_size = 32,
+  associated_control_input = "create-artillery-discovery-remote-hotkey"
 }
 
 data:extend({discovery_remote, discovery_flare, discovery_shortcut})

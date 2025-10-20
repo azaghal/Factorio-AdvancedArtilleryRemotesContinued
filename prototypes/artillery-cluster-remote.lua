@@ -166,6 +166,11 @@ for ammo_category, tint_colour in pairs(ammo_categories) do
     },
   }
 
+  local associated_control_input = nil
+  if ammo_category == "artillery-shell" then
+    associated_control_input = "create-artillery-cluster-remote-artillery-shell-hotkey"
+  end
+
   local cluster_shortcut = {
     type = "shortcut",
     name = "create-" .. remote_name,
@@ -180,6 +185,7 @@ for ammo_category, tint_colour in pairs(ammo_categories) do
     icon_mipmaps = 4,
     small_icons = remote_icons,
     small_icon_size = 32,
+    associated_control_input = associated_control_input
   }
 
   data:extend({flare})
