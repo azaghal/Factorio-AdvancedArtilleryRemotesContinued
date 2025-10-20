@@ -1,6 +1,7 @@
 # Ignore IDE and backup files.
 *~
 .#*
+.vscode
 
 # Ignore build artefacts.
 dist/
@@ -8,5 +9,3 @@ build/
 
 # Ignore project temporary directory.
 tmp/
-
-.vscode

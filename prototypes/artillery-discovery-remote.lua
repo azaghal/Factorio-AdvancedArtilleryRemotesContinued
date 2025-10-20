@@ -1,5 +1,6 @@
 -- Copyright (c) 2020 Dockmeister
 -- Copyright (c) 2023 Branko Majic
+-- Copyright (c) 2025 kommade
 -- Provided under MIT license. See LICENSE for details.
 
 
@@ -40,13 +41,28 @@ local discovery_remote = {
   },
   order = "b[turret]-d[artillery-turret]-ba[remote]",
   flags = { "only-in-cursor", "not-stackable", "spawnable" },
-  stack_size = 1
+  stack_size = 1,
+  inventory_move_sound = {
+    filename = "__base__/sound/item/artillery-remote-inventory-move.ogg",
+    volume = 0.7,
+    aggregation = {max_count = 1, remove = true},
+  },
+  pick_sound = {
+    filename = "__base__/sound/item/mechanical-inventory-pickup.ogg",
+    volume = 0.8,
+    aggregation = {max_count = 1, remove = true},
+  },
+  drop_sound = {
+    filename = "__base__/sound/item/artillery-remote-inventory-move.ogg",
+    volume = 0.7,
+    aggregation = {max_count = 1, remove = true},
+  },
 }
 
 local discovery_shortcut = {
   type = "shortcut",
-  name = "give-artillery-discovery-remote",
-  order = "a[mod]-artillery-discovery-remote",
+  name = "create-artillery-discovery-remote",
+  order = "e[spidertron-remote]",
   action = "spawn-item",
   technology_to_unlock = "artillery",
   unavailable_until_unlocked = true,

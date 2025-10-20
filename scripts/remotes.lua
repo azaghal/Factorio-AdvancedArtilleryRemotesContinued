@@ -1,5 +1,6 @@
 -- Copyright (c) 2020 Dockmeister
 -- Copyright (c) 2023 Branko Majic
+-- Copyright (c) 2025 kommade
 -- Provided under MIT license. See LICENSE for details.
 
 
@@ -332,11 +333,6 @@ function remotes.cluster_targeting(player, surface, requested_position, remote_p
   local target_entities = {}
   local targets = {}
 
-    -- No longer needed
-    --   if remote_prototype.name == "artillery-cluster-remote" then
-    --     remote_prototype = prototypes.item["artillery-cluster-remote-artillery-shell"]
-    --   end
-
   local artillery_flare_name = string.gsub(remote_prototype.name,
                                            "artillery[-]cluster[-]remote[-]",
                                            "artillery-cluster-flare-")
@@ -660,6 +656,7 @@ function remotes.get_damage_radius_default(ammo_category)
 
   return projectile_damage_radius_maximum
 end
+
 
 --- Initialises all global data from scratch.
 --

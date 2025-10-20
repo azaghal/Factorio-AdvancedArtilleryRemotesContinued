@@ -1,5 +1,6 @@
 -- Copyright (c) 2020 Dockmeister
 -- Copyright (c) 2023 Branko Majic
+-- Copyright (c) 2025 kommade
 -- Provided under MIT license. See LICENSE for details.
 
 -- Colours used for applying tint on targeting circles, allowing to distinguish between different remotes and targets on
@@ -22,24 +23,22 @@ local RESERVED_TINT_COLOURS = {
 -- Extract available artillery ammo categories. Use table keys in order to obtain unique set.
 local ammo_categories = {}
 
-for _, prototype_type in pairs({"artillery-turret", "artillery-wagon"}) do
-  for _, prototype in pairs(data.raw["artillery-turret"]) do
+for _, prototype in pairs(data.raw["artillery-turret"]) do
 
-    local attack_parameters = data.raw["gun"][prototype.gun].attack_parameters
+  local attack_parameters = data.raw["gun"][prototype.gun].attack_parameters
 
-    if attack_parameters.ammo_type then
-      ammo_categories[attack_parameters.ammo_type.category] = true
-    end
-
-    if attack_parameters.ammo_category then
-      ammo_categories[attack_parameters.ammo_category] = true
-    end
-
-    for _, ammo_category in pairs(attack_parameters.ammo_categories or {}) do
-      ammo_categories[ammo_category] = true
-    end
-
+  if attack_parameters.ammo_type then
+    ammo_categories[attack_parameters.ammo_type.category] = true
   end
+
+  if attack_parameters.ammo_category then
+    ammo_categories[attack_parameters.ammo_category] = true
+  end
+
+  for _, ammo_category in pairs(attack_parameters.ammo_categories or {}) do
+    ammo_categories[ammo_category] = true
+  end
+
 end
 
 -- Assign reserved tint colours first.
@@ -150,12 +149,28 @@ for ammo_category, tint_colour in pairs(ammo_categories) do
     order = "b[turret]-d[artillery-turret]-ba[remote]",
     flags = { "only-in-cursor", "not-stackable", "spawnable" },
     stack_size = 1,
+    inventory_move_sound = {
+      filename = "__base__/sound/item/artillery-remote-inventory-move.ogg",
+      volume = 0.7,
+      aggregation = {max_count = 1, remove = true},
+    },
+    pick_sound = {
+      filename = "__base__/sound/item/mechanical-inventory-pickup.ogg",
+      volume = 0.8,
+      aggregation = {max_count = 1, remove = true},
+    },
+    drop_sound = {
+      filename = "__base__/sound/item/artillery-remote-inventory-move.ogg",
+      volume = 0.7,
+      aggregation = {max_count = 1, remove = true},
+    },
   }
 
   local cluster_shortcut = {
     type = "shortcut",
-    name = "give-" .. remote_name,
-    order = "a[mod]-artillery-cluster-remote",
+    name = "create-" .. remote_name,
+    localised_name = remote_localised_name,
+    order = "e[spidertron-remote]",
     action = "spawn-item",
     technology_to_unlock = "artillery",
     unavailable_until_unlocked = true,
@@ -169,6 +184,6 @@ for ammo_category, tint_colour in pairs(ammo_categories) do
 
   data:extend({flare})
   data:extend({remote})
-  data:extend({ cluster_shortcut })
+  data:extend({cluster_shortcut})
 
 end
