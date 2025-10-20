@@ -5,3 +5,4 @@
 
 
 require "prototypes/artillery-discovery-remote"
+require "prototypes/custom-inputs.lua"
