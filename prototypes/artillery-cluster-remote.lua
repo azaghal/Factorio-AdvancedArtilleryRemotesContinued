@@ -23,22 +23,24 @@ local RESERVED_TINT_COLOURS = {
 -- Extract available artillery ammo categories. Use table keys in order to obtain unique set.
 local ammo_categories = {}
 
-for _, prototype in pairs(data.raw["artillery-turret"]) do
+for _, prototype_type in pairs({"artillery-turret", "artillery-wagon"}) do
+  for _, prototype in pairs(data.raw[prototype_type]) do
 
-  local attack_parameters = data.raw["gun"][prototype.gun].attack_parameters
+    local attack_parameters = data.raw["gun"][prototype.gun].attack_parameters
 
-  if attack_parameters.ammo_type then
-    ammo_categories[attack_parameters.ammo_type.category] = true
+    if attack_parameters.ammo_type then
+      ammo_categories[attack_parameters.ammo_type.category] = true
+    end
+
+    if attack_parameters.ammo_category then
+      ammo_categories[attack_parameters.ammo_category] = true
+    end
+
+    for _, ammo_category in pairs(attack_parameters.ammo_categories or {}) do
+      ammo_categories[ammo_category] = true
+    end
+
   end
-
-  if attack_parameters.ammo_category then
-    ammo_categories[attack_parameters.ammo_category] = true
-  end
-
-  for _, ammo_category in pairs(attack_parameters.ammo_categories or {}) do
-    ammo_categories[ammo_category] = true
-  end
-
 end
 
 -- Assign reserved tint colours first.
