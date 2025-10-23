@@ -710,6 +710,13 @@ function remotes.on_init()
 end
 
 
+--- Handler invoked when a save file is loaded.
+--
+function remotes.on_load()
+  remotes.initialise_global_data()
+end
+
+
 --- Handler invoked for game version updates, mod version changes, and mod startup configuration changes.
 --
 -- @param data ConfigurationChangedData Information about mod changes passed on by the game engine.
