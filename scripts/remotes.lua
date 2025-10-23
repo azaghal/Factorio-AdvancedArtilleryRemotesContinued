@@ -629,7 +629,7 @@ function remotes.get_damage_radius_default(ammo_category)
   for _, ammo_prototype in pairs(ammo_prototypes) do
     local ammo_type = ammo_prototype.get_ammo_type()
 
-    if ammo_type.category == ammo_category then
+    if ammo_type and ammo_type.category == ammo_category then
 
       for _, action in pairs(ammo_type.action) do
 
@@ -689,7 +689,6 @@ end
 --
 function remotes.show_damage_radius_defaults(player)
   local listing = {}
-  local sorted_ammo_categories = {}
 
   for ammo_category, damage_radius in pairs(storage.ammo_category_damage_radius_defaults) do
     table.insert(listing, ammo_category .. "=" .. damage_radius)
@@ -706,6 +705,13 @@ end
 --- Handler invoked when the mod is added for the first time.
 --
 function remotes.on_init()
+  remotes.initialise_global_data()
+end
+
+
+--- Handler invoked when a save file is loaded.
+--
+function remotes.on_load()
   remotes.initialise_global_data()
 end
 
@@ -736,10 +742,7 @@ end
 -- @param event EventData Event data as passed-in by the game engine.
 --
 function remotes.on_player_used_capsule(event)
-
-  -- @WORKAROUND: Name comparison for artillery-cluster-remote is meant for compatbility mode with Shortcuts. Drop the
-  --              condition once the Shortcuts mod has been properly fixed to handle new prototype name.
-  if string.find(event.item.name, "artillery[-]cluster[-]remote[-]") == 1 or event.item.name == "artillery-cluster-remote" then
+  if event.item.name == "artillery-cluster-remote" then
     local player = game.players[event.player_index]
     remotes.cluster_targeting(player, player.surface, event.position, event.item, remotes.get_cluster_radius())
   end
