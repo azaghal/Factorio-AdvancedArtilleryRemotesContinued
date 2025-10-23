@@ -629,19 +629,23 @@ function remotes.get_damage_radius_default(ammo_category)
   for _, ammo_prototype in pairs(ammo_prototypes) do
     local ammo_type = ammo_prototype.get_ammo_type()
 
-    if ammo_type and ammo_type.category == ammo_category then
+    -- Don't allow mods to overwrite the damage radius of the default artillery shell.
+    if ammo_prototype.ammo_category.name ~= "artillery-shell" or ammo_prototype.name == "artillery-shell" then
+      if ammo_type and ammo_prototype.ammo_category.name == ammo_category then
 
-      for _, action in pairs(ammo_type.action) do
+        for _, action in pairs(ammo_type.action) do
 
-        if action.type == "direct" then
+          if action.type == "direct" then
 
-          for _, action_delivery in pairs(action.action_delivery) do
+            for _, action_delivery in pairs(action.action_delivery) do
 
-            if action_delivery.projectile then
-              local projectile_damage_radius = remotes.get_projectile_damage_radius(action_delivery.projectile)
-              projectile_damage_radius_maximum =
-                projectile_damage_radius > projectile_damage_radius_maximum and projectile_damage_radius or
-                projectile_damage_radius_maximum
+              if action_delivery.projectile then
+                local projectile_damage_radius = remotes.get_projectile_damage_radius(action_delivery.projectile)
+                projectile_damage_radius_maximum =
+                  projectile_damage_radius > projectile_damage_radius_maximum and projectile_damage_radius or
+                  projectile_damage_radius_maximum
+              end
+
             end
 
           end
@@ -649,9 +653,7 @@ function remotes.get_damage_radius_default(ammo_category)
         end
 
       end
-
     end
-
   end
 
   return projectile_damage_radius_maximum
