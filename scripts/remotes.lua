@@ -711,13 +711,6 @@ function remotes.on_init()
 end
 
 
---- Handler invoked when a save file is loaded.
---
-function remotes.on_load()
-  remotes.initialise_global_data()
-end
-
-
 --- Handler invoked for game version updates, mod version changes, and mod startup configuration changes.
 --
 -- @param data ConfigurationChangedData Information about mod changes passed on by the game engine.
@@ -744,7 +737,7 @@ end
 -- @param event EventData Event data as passed-in by the game engine.
 --
 function remotes.on_player_used_capsule(event)
-  if event.item.name == "artillery-cluster-remote" then
+  if string.find(event.item.name, "artillery[-]cluster[-]remote[-]") == 1 then
     local player = game.players[event.player_index]
     remotes.cluster_targeting(player, player.surface, event.position, event.item, remotes.get_cluster_radius())
   end
