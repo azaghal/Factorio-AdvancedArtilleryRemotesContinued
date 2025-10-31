@@ -330,7 +330,6 @@ end
 -- @param targeting_radius int Radius around the requested position to target.
 --
 function remotes.cluster_targeting(player, surface, requested_position, remote_prototype, targeting_radius)
-  local target_entities = {}
   local targets = {}
 
   local artillery_flare_name = string.gsub(remote_prototype.name,
@@ -623,29 +622,26 @@ end
 function remotes.get_damage_radius_default(ammo_category)
   local ammo_prototypes = prototypes.get_item_filtered( { { filter = "type", type = "ammo" } } )
 
-  local projectile_damage_radius_maximum = 0
+  -- Use the minimum value as mods that do not define their own artillery categories can override vanilla ammo which would render them ineffective.
+  local projectile_damage_radius_minimum = math.huge
 
   -- Iterate over all ammo items, and operate only on those that have a matching ammo category.
   for _, ammo_prototype in pairs(ammo_prototypes) do
     local ammo_type = ammo_prototype.get_ammo_type()
 
-    -- Don't allow mods to overwrite the damage radius of the default artillery shell.
-    if ammo_prototype.ammo_category.name ~= "artillery-shell" or ammo_prototype.name == "artillery-shell" then
-      if ammo_type and ammo_prototype.ammo_category.name == ammo_category then
+    if ammo_type and ammo_prototype.ammo_category.name == ammo_category then
 
-        for _, action in pairs(ammo_type.action) do
+      for _, action in pairs(ammo_type.action) do
 
-          if action.type == "direct" then
+        if action.type == "direct" then
 
-            for _, action_delivery in pairs(action.action_delivery) do
+          for _, action_delivery in pairs(action.action_delivery) do
 
-              if action_delivery.projectile then
-                local projectile_damage_radius = remotes.get_projectile_damage_radius(action_delivery.projectile)
-                projectile_damage_radius_maximum =
-                  projectile_damage_radius > projectile_damage_radius_maximum and projectile_damage_radius or
-                  projectile_damage_radius_maximum
-              end
-
+            if action_delivery.projectile then
+              local projectile_damage_radius = remotes.get_projectile_damage_radius(action_delivery.projectile)
+              projectile_damage_radius_minimum =
+                projectile_damage_radius < projectile_damage_radius_minimum and projectile_damage_radius or
+                projectile_damage_radius_minimum
             end
 
           end
@@ -653,10 +649,11 @@ function remotes.get_damage_radius_default(ammo_category)
         end
 
       end
+
     end
   end
 
-  return projectile_damage_radius_maximum
+  return projectile_damage_radius_minimum
 end
 
 
@@ -697,6 +694,17 @@ function remotes.show_damage_radius_defaults(player)
   end
 
   player.print({"info.aar-ammo-category-damage-radius-defaults", table.concat(listing, "\n") })
+end
+
+
+--- Forces recalculation of damage radius defaults for all ammo categories.
+--
+-- @param player LuaPlayer Player requesting the recalculation.
+--
+function remotes.recalculate_damage_radius_defaults(player)
+  remotes.initialise_global_data()
+  player.print({ "info.aar-recalc-damage-radius-defaults" })
+  remotes.show_damage_radius_defaults(player)
 end
 
 

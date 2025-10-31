@@ -24,7 +24,6 @@ local discovery_flare = util.table.deepcopy(data.raw["artillery-flare"]["artille
 discovery_flare.name = "artillery-discovery-flare"
 discovery_flare.icons = discovery_remote_icons
 discovery_flare.icon_size = 64
-discovery_flare.icon_mipmaps = 4
 discovery_flare.shot_category = "artillery-shell"
 
 

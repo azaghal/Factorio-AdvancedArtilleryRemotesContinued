@@ -16,6 +16,14 @@ Usage:
     /aar-show-damage-radius-defaults
 ]]
 
+commands.recalculate_damage_radius_defaults = {}
+commands.recalculate_damage_radius_defaults.name = "aar-recalculate-damage-radius-defaults"
+commands.recalculate_damage_radius_defaults.help = [[
+Forces recalculation of damage radius defaults for all ammo categories recognised by the Advanced Artillery Remotes mod. Useful for mod development.
+Usage:
+    /aar-recalculate-damage-radius-defaults
+]]
+
 
 --- Shows current defaults for ammo category damage radius.
 --
@@ -25,6 +33,17 @@ commands.show_damage_radius_defaults.func = function(command_data)
   local player = game.players[command_data.player_index]
 
   remotes.show_damage_radius_defaults(player)
+end
+
+
+--- Recalculates damage radius defaults for all ammo categories.
+--
+-- @param command_data CustomCommandData Command data structure passed-in by the game engine.
+--
+commands.recalculate_damage_radius_defaults.func = function(command_data)
+  local player = game.players[command_data.player_index]
+
+  remotes.recalculate_damage_radius_defaults(player)
 end
 
 

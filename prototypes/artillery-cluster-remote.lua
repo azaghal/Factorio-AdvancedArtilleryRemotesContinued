@@ -110,7 +110,6 @@ for ammo_category, tint_colour in pairs(ammo_categories) do
     shot_category = ammo_category,
     icons = remote_icons,
     icon_size = 64,
-    icon_mipmaps = 4,
     flags = {"placeable-off-grid", "not-on-map"},
     map_color = tint_colour,
     life_time = 60 * 60,
