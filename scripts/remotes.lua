@@ -697,17 +697,6 @@ function remotes.show_damage_radius_defaults(player)
 end
 
 
---- Forces recalculation of damage radius defaults for all ammo categories.
---
--- @param player LuaPlayer Player requesting the recalculation.
---
-function remotes.recalculate_damage_radius_defaults(player)
-  remotes.initialise_global_data()
-  player.print({ "info.aar-recalc-damage-radius-defaults" })
-  remotes.show_damage_radius_defaults(player)
-end
-
-
 -- Event handlers
 -- ==============
 
