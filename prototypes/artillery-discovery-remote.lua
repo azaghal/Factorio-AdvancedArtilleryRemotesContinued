@@ -1,5 +1,6 @@
 -- Copyright (c) 2020 Dockmeister
 -- Copyright (c) 2023 Branko Majic
+-- Copyright (c) 2025 kommade
 -- Provided under MIT license. See LICENSE for details.
 
 
@@ -23,12 +24,12 @@ local discovery_flare = util.table.deepcopy(data.raw["artillery-flare"]["artille
 discovery_flare.name = "artillery-discovery-flare"
 discovery_flare.icons = discovery_remote_icons
 discovery_flare.icon_size = 64
-discovery_flare.icon_mipmaps = 4
 discovery_flare.shot_category = "artillery-shell"
 
 
 local discovery_remote = {
   type = "capsule",
+  auto_recycle = false,
   name = "artillery-discovery-remote",
   icons = discovery_remote_icons,
   icon_size = 64,
@@ -37,23 +38,40 @@ local discovery_remote = {
     type = "artillery-remote",
     flare = "artillery-discovery-flare"
   },
-  subgroup = "defensive-structure",
-  order = "b[turret]-d[artillery-turret]-bb[remote]",
-  stack_size = 1
-}
-
-
-local discovery_recipe = {
-  type = "recipe",
-  name = "artillery-discovery-remote",
-  enabled = false,
-  ingredients =
-  {
-    {"artillery-targeting-remote", 1},
-    {"processing-unit", 1},
+  order = "b[turret]-d[artillery-turret]-ba[remote]",
+  flags = { "only-in-cursor", "not-stackable", "spawnable" },
+  stack_size = 1,
+  inventory_move_sound = {
+    filename = "__base__/sound/item/artillery-remote-inventory-move.ogg",
+    volume = 0.7,
+    aggregation = {max_count = 1, remove = true},
   },
-  result = "artillery-discovery-remote"
+  pick_sound = {
+    filename = "__base__/sound/item/mechanical-inventory-pickup.ogg",
+    volume = 0.8,
+    aggregation = {max_count = 1, remove = true},
+  },
+  drop_sound = {
+    filename = "__base__/sound/item/artillery-remote-inventory-move.ogg",
+    volume = 0.7,
+    aggregation = {max_count = 1, remove = true},
+  },
 }
 
-table.insert(data.raw["technology"]["artillery"].effects, {type = "unlock-recipe", recipe = "artillery-discovery-remote"})
-data:extend({discovery_remote, discovery_flare, discovery_recipe})
+local discovery_shortcut = {
+  type = "shortcut",
+  name = "create-artillery-discovery-remote",
+  order = "e[spidertron-remote]",
+  action = "spawn-item",
+  technology_to_unlock = "artillery",
+  unavailable_until_unlocked = true,
+  item_to_spawn = "artillery-discovery-remote",
+  icons = discovery_remote_icons,
+  icon_size = 64,
+  icon_mipmaps = 4,
+  small_icons = discovery_remote_icons,
+  small_icon_size = 32,
+  associated_control_input = "create-artillery-discovery-remote-hotkey"
+}
+
+data:extend({discovery_remote, discovery_flare, discovery_shortcut})

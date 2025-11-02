@@ -4,8 +4,5 @@
     ],
     "item": [
         ["artillery-cluster-remote", "artillery-cluster-remote-artillery-shell"]
-    ],
-    "recipe": [
-        ["artillery-cluster-remote", "artillery-cluster-remote-artillery-shell"]
     ]
 }

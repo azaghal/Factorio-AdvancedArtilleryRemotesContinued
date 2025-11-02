@@ -1,5 +1,6 @@
 -- Copyright (c) 2020 Dockmeister
 -- Copyright (c) 2023 Branko Majic
+-- Copyright (c) 2025 kommade
 -- Provided under MIT license. See LICENSE for details.
 
 -- Colours used for applying tint on targeting circles, allowing to distinguish between different remotes and targets on
@@ -23,7 +24,7 @@ local RESERVED_TINT_COLOURS = {
 local ammo_categories = {}
 
 for _, prototype_type in pairs({"artillery-turret", "artillery-wagon"}) do
-  for _, prototype in pairs(data.raw["artillery-turret"]) do
+  for _, prototype in pairs(data.raw[prototype_type]) do
 
     local attack_parameters = data.raw["gun"][prototype.gun].attack_parameters
 
@@ -109,7 +110,6 @@ for ammo_category, tint_colour in pairs(ammo_categories) do
     shot_category = ammo_category,
     icons = remote_icons,
     icon_size = 64,
-    icon_mipmaps = 4,
     flags = {"placeable-off-grid", "not-on-map"},
     map_color = tint_colour,
     life_time = 60 * 60,
@@ -136,6 +136,7 @@ for ammo_category, tint_colour in pairs(ammo_categories) do
   -- Cluster remote.
   local remote = {
     type = "capsule",
+    auto_recycle = false,
     name = remote_name,
     localised_name = remote_localised_name,
     icons = remote_icons,
@@ -145,27 +146,51 @@ for ammo_category, tint_colour in pairs(ammo_categories) do
       type = "artillery-remote",
       flare = flare_name
     },
-    subgroup = "defensive-structure",
+    subgroup = "spawnables",
     order = "b[turret]-d[artillery-turret]-ba[remote]",
-    stack_size = 1
+    flags = { "only-in-cursor", "not-stackable", "spawnable" },
+    stack_size = 1,
+    inventory_move_sound = {
+      filename = "__base__/sound/item/artillery-remote-inventory-move.ogg",
+      volume = 0.7,
+      aggregation = {max_count = 1, remove = true},
+    },
+    pick_sound = {
+      filename = "__base__/sound/item/mechanical-inventory-pickup.ogg",
+      volume = 0.8,
+      aggregation = {max_count = 1, remove = true},
+    },
+    drop_sound = {
+      filename = "__base__/sound/item/artillery-remote-inventory-move.ogg",
+      volume = 0.7,
+      aggregation = {max_count = 1, remove = true},
+    },
   }
 
-  -- Cluster remote recipe.
-  local remote_recipe = {
-    type = "recipe",
-    name = remote_name,
-    enabled = false,
-    ingredients =
-      {
-        {"artillery-targeting-remote", 1},
-        {"processing-unit", 1},
-      },
-    result = remote_name
+  local associated_control_input = nil
+  if ammo_category == "artillery-shell" then
+    associated_control_input = "create-artillery-cluster-remote-artillery-shell-hotkey"
+  end
+
+  local cluster_shortcut = {
+    type = "shortcut",
+    name = "create-" .. remote_name,
+    localised_name = remote_localised_name,
+    order = "e[spidertron-remote]",
+    action = "spawn-item",
+    technology_to_unlock = "artillery",
+    unavailable_until_unlocked = true,
+    item_to_spawn = remote_name,
+    icons = remote_icons,
+    icon_size = 64,
+    icon_mipmaps = 4,
+    small_icons = remote_icons,
+    small_icon_size = 32,
+    associated_control_input = associated_control_input
   }
 
   data:extend({flare})
   data:extend({remote})
-  data:extend({remote_recipe})
+  data:extend({cluster_shortcut})
 
-  table.insert(data.raw["technology"]["artillery"].effects, {type = "unlock-recipe", recipe = remote_name})
 end

@@ -1,6 +1,7 @@
 # Ignore IDE and backup files.
 *~
 .#*
+.vscode
 
 # Ignore build artefacts.
 dist/

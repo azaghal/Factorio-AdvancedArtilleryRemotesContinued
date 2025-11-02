@@ -1,5 +1,6 @@
 -- Copyright (c) 2020 Dockmeister
 -- Copyright (c) 2023 Branko Majic
+-- Copyright (c) 2025 kommade
 -- Provided under MIT license. See LICENSE for details.
 
 
@@ -31,7 +32,7 @@ function remotes.parse_damage_radius_overrides(value)
     damage_radius = tonumber(damage_radius)
 
     -- Store unrecognised ammo categories.
-    if not game.ammo_category_prototypes[ammo_category] then
+    if not prototypes.ammo_category[ammo_category] then
       table.insert(unknown_ammo_categories, ammo_category)
     end
 
@@ -61,8 +62,8 @@ end
 function remotes.get_damage_radius(ammo_category)
 
   return
-    global.ammo_category_damage_radius_overrides[ammo_category] or
-    global.ammo_category_damage_radius_defaults[ammo_category]
+    storage.ammo_category_damage_radius_overrides[ammo_category] or
+    storage.ammo_category_damage_radius_defaults[ammo_category]
 end
 
 
@@ -329,15 +330,7 @@ end
 -- @param targeting_radius int Radius around the requested position to target.
 --
 function remotes.cluster_targeting(player, surface, requested_position, remote_prototype, targeting_radius)
-  local target_entities = {}
   local targets = {}
-
-  -- @WORKAROUND: Handling of compatibility cluster remote for use with Shortcuts mod. Once Shortcuts mod has been
-  --              updated to deal with new cluster remote name (artillery-cluster-remote-artillery-shell), this block
-  --              can be dropped.
-  if remote_prototype.name == "artillery-cluster-remote" then
-    remote_prototype = game.item_prototypes["artillery-cluster-remote-artillery-shell"]
-  end
 
   local artillery_flare_name = string.gsub(remote_prototype.name,
                                            "artillery[-]cluster[-]remote[-]",
@@ -414,14 +407,14 @@ function remotes.discovery_targeting(player, surface, requested_position, discov
   end
 
   -- No supported artillery is present in the game. This most likely indicates bug in the mod.
-  if table_size(global.supported_artillery_entity_prototypes["artillery-shell"] or {}) == 0 then
+  if table_size(storage.supported_artillery_entity_prototypes["artillery-shell"] or {}) == 0 then
     player.print({"error.aar-no-supported-artillery-in-game"})
     return
   end
 
   -- Locate all artillery pieces on targetted surface.
   local artilleries = surface.find_entities_filtered {
-    name = global.supported_artillery_entity_prototypes["artillery-shell"],
+    name = storage.supported_artillery_entity_prototypes["artillery-shell"],
     force = player.force,
   }
 
@@ -483,7 +476,7 @@ end
 -- @return {string} List of artillery ammo category names.
 --
 function remotes.get_artillery_ammo_categories()
-  local artillery_prototypes = game.get_filtered_entity_prototypes(
+  local artillery_prototypes = prototypes.get_entity_filtered(
     {
       { filter = "type", type = "artillery-turret" },
       { filter = "type", type = "artillery-wagon" }
@@ -518,7 +511,7 @@ function remotes.get_artillery_entity_prototypes_by_ammo_category(ammo_category)
   -- "Set" for storing the matched entity prototype names.
   local matched_artillery_prototypes = {}
 
-  local artillery_prototypes = game.get_filtered_entity_prototypes(
+  local artillery_prototypes = prototypes.get_entity_filtered(
     {
       { filter = "type", type = "artillery-turret" },
       { filter = "type", type = "artillery-wagon" }
@@ -594,7 +587,7 @@ end
 -- @return int Damage radius for projectile.
 --
 function remotes.get_projectile_damage_radius(name)
-  local prototype = game.entity_prototypes[name]
+  local prototype = prototypes.entity[name]
 
   -- Starting point.
   local projectile_damage_radius = 0
@@ -627,15 +620,16 @@ end
 -- @return int Damage radius for passed-in ammo category.
 --
 function remotes.get_damage_radius_default(ammo_category)
-  local ammo_prototypes = game.get_filtered_item_prototypes( { { filter = "type", type = "ammo" } } )
+  local ammo_prototypes = prototypes.get_item_filtered( { { filter = "type", type = "ammo" } } )
 
-  local projectile_damage_radius_maximum = 0
+  -- Use the minimum value as mods that do not define their own artillery categories can override vanilla ammo which would render them ineffective.
+  local projectile_damage_radius_minimum = math.huge
 
   -- Iterate over all ammo items, and operate only on those that have a matching ammo category.
   for _, ammo_prototype in pairs(ammo_prototypes) do
     local ammo_type = ammo_prototype.get_ammo_type()
 
-    if ammo_type.category == ammo_category then
+    if ammo_type and ammo_prototype.ammo_category.name == ammo_category then
 
       for _, action in pairs(ammo_type.action) do
 
@@ -645,9 +639,9 @@ function remotes.get_damage_radius_default(ammo_category)
 
             if action_delivery.projectile then
               local projectile_damage_radius = remotes.get_projectile_damage_radius(action_delivery.projectile)
-              projectile_damage_radius_maximum =
-                projectile_damage_radius > projectile_damage_radius_maximum and projectile_damage_radius or
-                projectile_damage_radius_maximum
+              projectile_damage_radius_minimum =
+                projectile_damage_radius < projectile_damage_radius_minimum and projectile_damage_radius or
+                projectile_damage_radius_minimum
             end
 
           end
@@ -657,28 +651,9 @@ function remotes.get_damage_radius_default(ammo_category)
       end
 
     end
-
   end
 
-  return projectile_damage_radius_maximum
-end
-
-
---- Updates recipe availability for all forces based on researched technologies.
---
--- This function should be used when additional artillery ammo categories are introduced into the game by mods added to
--- an existing save.
---
-function remotes.update_recipe_availability()
-  for _, force in pairs(game.forces) do
-    for _, recipe in pairs(force.recipes) do
-      if force.technologies["artillery"].researched and
-         string.find(recipe.name, "artillery[-]cluster[-]remote[-]") == 1 or
-         recipe.name == "artillery-discovery-remote" then
-        recipe.enabled = true
-      end
-    end
-  end
+  return projectile_damage_radius_minimum
 end
 
 
@@ -689,21 +664,21 @@ end
 --
 function remotes.initialise_global_data()
   -- Set-up list of available ammo categories.
-  global.artillery_ammo_categories = remotes.get_artillery_ammo_categories()
+  storage.artillery_ammo_categories = remotes.get_artillery_ammo_categories()
 
   -- Set-up list of supported artillery entity prototypes by ammo category.
-  global.supported_artillery_entity_prototypes = {}
-  for _, ammo_category in pairs(global.artillery_ammo_categories) do
-    global.supported_artillery_entity_prototypes[ammo_category] = remotes.get_artillery_entity_prototypes_by_ammo_category(ammo_category)
+  storage.supported_artillery_entity_prototypes = {}
+  for _, ammo_category in pairs(storage.artillery_ammo_categories) do
+    storage.supported_artillery_entity_prototypes[ammo_category] = remotes.get_artillery_entity_prototypes_by_ammo_category(ammo_category)
   end
 
   -- Calculate default damage radius for each ammo category.
-  global.ammo_category_damage_radius_defaults = {}
-  for _, ammo_category in pairs(global.artillery_ammo_categories) do
-    global.ammo_category_damage_radius_defaults[ammo_category] = remotes.get_damage_radius_default(ammo_category)
+  storage.ammo_category_damage_radius_defaults = {}
+  for _, ammo_category in pairs(storage.artillery_ammo_categories) do
+    storage.ammo_category_damage_radius_defaults[ammo_category] = remotes.get_damage_radius_default(ammo_category)
   end
 
-  global.ammo_category_damage_radius_overrides = remotes.parse_damage_radius_overrides(settings.global["aar-damage-radius-overrides"].value)
+  storage.ammo_category_damage_radius_overrides = remotes.parse_damage_radius_overrides(settings.global["aar-damage-radius-overrides"].value)
 end
 
 
@@ -713,13 +688,23 @@ end
 --
 function remotes.show_damage_radius_defaults(player)
   local listing = {}
-  local sorted_ammo_categories = {}
 
-  for ammo_category, damage_radius in pairs(global.ammo_category_damage_radius_defaults) do
+  for ammo_category, damage_radius in pairs(storage.ammo_category_damage_radius_defaults) do
     table.insert(listing, ammo_category .. "=" .. damage_radius)
   end
 
   player.print({"info.aar-ammo-category-damage-radius-defaults", table.concat(listing, "\n") })
+end
+
+
+--- Forces recalculation of damage radius defaults for all ammo categories.
+--
+-- @param player LuaPlayer Player requesting the recalculation.
+--
+function remotes.recalculate_damage_radius_defaults(player)
+  remotes.initialise_global_data()
+  player.print({ "info.aar-recalc-damage-radius-defaults" })
+  remotes.show_damage_radius_defaults(player)
 end
 
 
@@ -744,17 +729,14 @@ function remotes.on_configuration_changed(data)
   if mod_changes then
     -- Wipe the settings stored in global variable (from older mod versions). They are already easily accessible through
     -- mod API, and this helps avoid having to keep them in sync inside of global variable.
-    global.settings = nil
+    storage.settings = nil
 
     -- Wipe the messages stored in global variable (from older mod versions). Unused data structure.
-    global.messages = nil
+    storage.messages = nil
   end
 
   -- Reinitialise all global data to pick up any changes in ammo categories etc.
   remotes.initialise_global_data()
-
-  -- Update availability of advanced artillery remotes for all forces.
-  remotes.update_recipe_availability()
 end
 
 
@@ -763,10 +745,7 @@ end
 -- @param event EventData Event data as passed-in by the game engine.
 --
 function remotes.on_player_used_capsule(event)
-
-  -- @WORKAROUND: Name comparison for artillery-cluster-remote is meant for compatbility mode with Shortcuts. Drop the
-  --              condition once the Shortcuts mod has been properly fixed to handle new prototype name.
-  if string.find(event.item.name, "artillery[-]cluster[-]remote[-]") == 1 or event.item.name == "artillery-cluster-remote" then
+  if string.find(event.item.name, "artillery[-]cluster[-]remote[-]") == 1 then
     local player = game.players[event.player_index]
     remotes.cluster_targeting(player, player.surface, event.position, event.item, remotes.get_cluster_radius())
   end
@@ -786,7 +765,7 @@ function remotes.on_runtime_mod_setting_changed(event)
 
   -- Parse the player-provided settings.
   if event.setting == "aar-damage-radius-overrides" then
-    global.ammo_category_damage_radius_overrides = remotes.parse_damage_radius_overrides(settings.global["aar-damage-radius-overrides"].value)
+    storage.ammo_category_damage_radius_overrides = remotes.parse_damage_radius_overrides(settings.global["aar-damage-radius-overrides"].value)
   end
 end
 

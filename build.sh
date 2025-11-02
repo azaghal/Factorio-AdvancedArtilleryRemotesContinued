@@ -18,6 +18,8 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 
+# Anyone trying to run this script on Windows Subsystem for Linux should take care not to introduce CRLF line endings.
+
 # Treat unset variables as errors.
 set -u
 
@@ -734,12 +736,12 @@ function command_build() {
 
         if [[ $mod_file_path =~ .*\.lua ]] && ! luac -o /dev/null "$mod_file_path"; then
             (( error_count += 1 ))
-            error "Validation failed for file: $mod_file"
+            error "Validation failed for file: $mod_file_path"
         fi
 
         if [[ $mod_file_path =~ .*\.json ]] && ! python -m json.tool "$mod_file_path" > /dev/null; then
             (( error_count += 1 ))
-            error "Validation failed for file: $mod_file"
+            error "Validation failed for file: $mod_file_path"
         fi
     done
 
