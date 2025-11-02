@@ -4,7 +4,7 @@
 data:extend({
   {
     type = "custom-input",
-    name = "create-artillery-discovery-remote-hotkey",
+    name = "give-artillery-discovery-remote",
     key_sequence = "ALT + H",
     consuming = "game-only",
     item_to_spawn = "artillery-discovery-remote",
@@ -12,7 +12,7 @@ data:extend({
   },
   {
     type = "custom-input",
-    name = "create-artillery-cluster-remote-artillery-shell-hotkey",
+    name = "give-artillery-cluster-remote",
     key_sequence = "ALT + I",
     consuming = "game-only",
     item_to_spawn = "artillery-cluster-remote-artillery-shell",

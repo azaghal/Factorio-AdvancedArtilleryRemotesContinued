@@ -79,7 +79,7 @@ for ammo_category, tint_colour in pairs(ammo_categories) do
   local flare_name = "artillery-cluster-flare-" .. ammo_category
   local remote_name = "artillery-cluster-remote-" .. ammo_category
 
-  -- Construct localised name for the remote by "appending" the ammo category to base name.
+  -- Construct localised names and descriptions by "appending" the ammo category to base names.
   local remote_localised_name = {
     "",
     {"item-name.artillery-cluster-remote"},
@@ -87,6 +87,21 @@ for ammo_category, tint_colour in pairs(ammo_categories) do
     {"?", {"ammo-category-name." .. ammo_category}, ammo_category},
     ")"
   }
+  local remote_localised_description = {
+    "",
+    {"item-description.artillery-cluster-remote"},
+    " (",
+    {"?", {"ammo-category-name." .. ammo_category}, ammo_category},
+    ")"
+  }
+  local shortcut_localised_name = {
+    "",
+    {"shortcut-name.make-artillery-cluster-remote"},
+    " (",
+    {"?", {"ammo-category-name." .. ammo_category}, ammo_category},
+    ")"
+  }
+
   -- Use two layers for the cluster remote icon in order to allow applying tint to the targeting circle. This way we can
   -- easily define additional cluster remotes for different types of artillery shells that are visually distinct. In order
   -- to simulate the red colour of vanilla artillery remote, set tint to {r=255, g=45, b=8, a=255}.
@@ -139,6 +154,7 @@ for ammo_category, tint_colour in pairs(ammo_categories) do
     auto_recycle = false,
     name = remote_name,
     localised_name = remote_localised_name,
+    localised_description = remote_localised_description,
     icons = remote_icons,
     icon_size = 64,
     icon_mipmaps = 4,
@@ -169,13 +185,13 @@ for ammo_category, tint_colour in pairs(ammo_categories) do
 
   local associated_control_input = nil
   if ammo_category == "artillery-shell" then
-    associated_control_input = "create-artillery-cluster-remote-artillery-shell-hotkey"
+    associated_control_input = "give-artillery-cluster-remote"
   end
 
   local cluster_shortcut = {
     type = "shortcut",
     name = "create-" .. remote_name,
-    localised_name = remote_localised_name,
+    localised_name = shortcut_localised_name,
     order = "e[spidertron-remote]",
     action = "spawn-item",
     technology_to_unlock = "artillery",

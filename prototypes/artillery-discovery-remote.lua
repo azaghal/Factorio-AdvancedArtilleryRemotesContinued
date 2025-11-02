@@ -60,7 +60,7 @@ local discovery_remote = {
 
 local discovery_shortcut = {
   type = "shortcut",
-  name = "create-artillery-discovery-remote",
+  name = "make-artillery-discovery-remote",
   order = "e[spidertron-remote]",
   action = "spawn-item",
   technology_to_unlock = "artillery",
@@ -71,7 +71,7 @@ local discovery_shortcut = {
   icon_mipmaps = 4,
   small_icons = discovery_remote_icons,
   small_icon_size = 32,
-  associated_control_input = "create-artillery-discovery-remote-hotkey"
+  associated_control_input = "give-artillery-discovery-remote"
 }
 
 data:extend({discovery_remote, discovery_flare, discovery_shortcut})
