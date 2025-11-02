@@ -609,11 +609,13 @@ end
 
 --- Calculates the default damage radius for an (artillery) ammo category.
 --
--- The default damage radius is calculated to match the damage indicator that an artillery remote displays when player
--- is holding it in hand.
+-- The default damage radius is calculated to match the smallest maximum damage range of an ammo within a category. In
+-- other words, calculate maximum damage range for each ammo type in an ammo category, then pick the smallest value from
+-- those values.
 --
--- Take note that this is normally the largest possible damage radius for all the different projctiles that are tied-in
--- to the ammo category.
+-- While this does ensure that no gaps (in terms of damage) will be left when calculating the targets, it will lead to
+-- excessive artillery shell use (such as atomic artillery) when the ammo is not split out into separate ammo
+-- categories.
 --
 -- @param ammo_category string Ammo category (prototype) name.
 --
@@ -622,11 +624,21 @@ end
 function remotes.get_damage_radius_default(ammo_category)
   local ammo_prototypes = prototypes.get_item_filtered( { { filter = "type", type = "ammo" } } )
 
-  -- Use the minimum value as mods that do not define their own artillery categories can override vanilla ammo which would render them ineffective.
+  -- All calculated radiuses should be smaller than this one.
   local projectile_damage_radius_minimum = math.huge
 
   -- Iterate over all ammo items, and operate only on those that have a matching ammo category.
   for _, ammo_prototype in pairs(ammo_prototypes) do
+    -- @TODO: Possible inconsistency for multiple (per-source) ammo types
+    --   Apparently this function accepts the source type as first argument (defaulting to "default"). There seems to be
+    --   some kind of complication around this since multiple ammo types can be defined per source (default, player,
+    --   turret, vehicle), but not sure if any mod out there relies on this functionality. Might be useful to figure out
+    --   if some kind of refactor/expansion of code logic may be required. For more details, see:
+    --
+    --     - https://lua-api.factorio.com/2.0.72/classes/LuaItemPrototype.html#get_ammo_type
+    --     - https://lua-api.factorio.com/2.0.72/prototypes/AmmoItemPrototype.html#ammo_type
+    --     - https://lua-api.factorio.com/2.0.72/types/AmmoType.html#source_type
+    --     - https://lua-api.factorio.com/2.0.72/types/AmmoSourceType.html
     local ammo_type = ammo_prototype.get_ammo_type()
 
     if ammo_type and ammo_prototype.ammo_category.name == ammo_category then
