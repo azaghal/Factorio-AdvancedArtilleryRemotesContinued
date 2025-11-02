@@ -3,10 +3,10 @@ Version: 999.999.999
 Date: 9999-99-99
   Changes:
     - Deprecated support for "Shortcuts" mod has been dropped.
-    - Advanced artillery remotes are provided as shortcuts instead of items.
+    - Advanced artillery remotes are provided as shortcuts instead of craftable items.
   Features:
     - Updated for Factorio 2.0.
-    - Advanced artillery remotes can be invoked via custom input.
+    - Advanced artillery remotes can be invoked via custom input controls.
     - Confgured overrides are shown alongside defaults when using the /aar-show-damage-radius-defaults console command.
   Bugfixes:
 ---------------------------------------------------------------------------------------------------

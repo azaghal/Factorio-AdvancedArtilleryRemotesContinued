@@ -5,7 +5,9 @@ Advanced Artillery Remotes (Continued)
 About
 -----
 
-*Advanced Artillery Remotes* introduces additional artillery remotes to the game, allowing the player to use artillery for exploration (map discovery) purposes, as well as for easier destruction (through carpet bombing) of alien lifeforms.
+*Advanced Artillery Remotes* introduces additional artillery remotes (inn shortcut bar) to the game, allowing the player to use artillery for exploration (map discovery) purposes, as well as for easier destruction (through carpet bombing) of alien lifeforms.
+
+**NOTE:** If using any kind of mod that introduces additional types of artillery shells, please make sure to have a look at the *Damage radius overrides for cluster targeting* mod setting when using the cluster remotes.
 
 
 Features
@@ -29,7 +31,7 @@ A number of settings pertaining to artillery discovery remote are made available
 
 Artillery cluster remotes target nearby spawners and/or worms and blanket them with artillery fire.
 
-Multiple types of artillery cluster remotes are made available, one for each artillery ammo category. This way, if the 3rd-party mod implements dedicated ammo category for its artillery shells, it is possible to pick the best-suited artillery for the task. One example of such usage would be the [Atomic Artillery](https://mods.factorio.com/mod/AtomicArtillery) mod coupled with the [Atomic Artillery Remote](https://mods.factorio.com/mod/AtomicArtilleryRemote) mod, which allows player to pick whether the atomic or regular (vanilla) artillery should be used for carpet-bombing the enemy simply by using a different artillery cluster remote type.
+Multiple types of artillery cluster remotes are made available, one for each artillery ammo category. This way, if the 3rd-party mod implements dedicated ammo category for its artillery shells, it is possible to pick the best-suited artillery for the task. At time of this writing, however, there are no known mods for Factorio 2.0 that set-up a dedicated ammo category for the introduced artillery shells.
 
 Each artillery cluster remote type has its own colour assigned to the item icon, making it easier to distinguish between them. In some cases colour is assigned statically (for well-known ammo categories), while in others the mod assigns a random colour from a pre-defined set of colours.
 
@@ -44,6 +46,11 @@ Behaviour of artillery cluster remotes can be tweaked slightly through mod setti
 | ![](https://azaghal.github.io/Factorio-AdvancedArtilleryRemotesContinued/demo/cluster-remote.gif) |
 
 
+### Configruable controls
+
+All remotes can be accessed via input controls. These can be configured as usual via *Settings/Controls* menu (just search for *remote* in the list). No default input controls are provided in order to avoid collision with other mods.
+
+
 Contributions
 -------------
 
@@ -54,7 +61,7 @@ Known issues
 ------------
 
 -   Cluster targeting is suboptimal - less artillery shots could be used to destroy enemy within the same area. This is partially done in order to reduce complexity of comuputation, and partially in order not to make cluster targeting too overpowered - artillery cluster remotes save some time and provide convenience at the expense of increased resource usage.
--   Cluster targeting does not always manage to damage all enemy entities in an area. This is a consequence on how the damage radius is calculated for individual ammo categories. This is done by using same algorithm that shows the player damage/explosion area when holding the remote, which will often include visual effects such as smoke etc. However, this can be somewhat negated by using the mod settings to specify custom damage radius for ammo categories (see in-game mod settings for more details).
+-   Cluster targeting does not always manage to damage all enemy entities in an area. This is a consequence on how the damage radius is calculated for individual ammo categories. This is done by using roughly the same algorithm that shows the player damage/explosion area when holding the remote, which will often include visual effects such as smoke etc. However, this can be somewhat negated by using the mod settings to specify custom damage radius for ammo categories (see in-game mod settings for more details). To be more specific - a damage radius of artillery shell ammo category is calculated by using the largest damage radius of _all_ the different artillery ammo within a category.
 -   Distinct artillery cluster remotes can only be created per ammo category - if a mod introduces additional artillery shells (which have different damage radius compared to vanilla artillery shells) that belong to the default artillery shell ammo category, then only one artillery cluster remote type is added by the mod. The reason for this is that target (flare) spawning (created by the remote) revolves around ammo categories, and it is not possible to tell the game to use only a particular ammo type unless it belongs in its own category.
 -   Only up to six artillery cluster remote types can exist in any given game. There is no real limitation behind this in the code, except that the six corresponding colours have been generated statically using six-tone colour palette generator algorithm. Should a need arise, this mod can easily be updated to support more types of artillery cluster remotes.
 -   Artillery cluster remotes are researched as part of vanilla game *Artillery* research instead of making them available as part of a particular artillery shell type technology research. This is done primarily to avoid messing too much with the 3rd-party mod technology trees.
@@ -63,13 +70,17 @@ Known issues
 Roadmap
 -------
 
--   Introduce separate research technologies for discovery and cluster remotes, this avoiding having to mess with vanilla technology.
+-   Introduce separate research technologies for discovery and cluster remotes, thus avoiding having to mess with vanilla technology.
+-   Introduce optional support for automatically moving artillery ammo from third-party mods into their own ammo category, thus enabling multiple cluster remotes without requiring additional mod integration.
+-   Introduce ability to have a singular artillery cluster remote shortcut with ability to switch between the per-ammo-category cluster remotes using custom input bindings.
 
 
 Credits
 -------
 
 This is a continuation/fork of the original [Advanced Artillery Remotes](https://mods.factorio.com/mod/AdvArtilleryRemotes) mod, implemented and maintained by [Dockmeister](https://mods.factorio.com/user/Dockmeister). Many thanks to the original author for both implementing the original mod, and for releasing it under a Free (as in Freedom) license, thus making it possible to learn from it and make improvements.
+
+Manny thanks to [kommade](https://mods.factorio.com/user/kommade), author of the [AtomicArtillery2](https://mods.factorio.com/mod/AtomicArtillery2) for porting the mod to Factorio 2.0.
 
 
 License
