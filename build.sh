@@ -2,7 +2,7 @@
 #
 # factorio_development.sh
 #
-# Copyright (C) 2022, Branko Majic <branko@majic.rs>
+# Copyright (C) 2023, Branko Majic <branko@majic.rs>
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -18,13 +18,11 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 
-# Anyone trying to run this script on Windows Subsystem for Linux should take care not to introduce CRLF line endings.
-
 # Treat unset variables as errors.
 set -u
 
 PROGRAM="factorio_development.sh"
-VERSION="1.1.0"
+VERSION="2.1.1"
 
 function usage() {
     cat <<EOF
@@ -33,9 +31,12 @@ $PROGRAM $VERSION, helper tool for development of Factorio mods
 Usage:
 
   $PROGRAM [OPTIONS] init [MOD_DIRECTORY_PATH]
+
   $PROGRAM [OPTIONS] build [MOD_DIRECTORY_PATH]
   $PROGRAM [OPTIONS] release MOD_VERSION [MOD_DIRECTORY_PATH]
   $PROGRAM [OPTIONS] abort-release [MOD_DIRECTORY_PATH]
+
+  $PROGRAM [OPTIONS] check-updates [MOD_DIRECTORY_PATH]
 
 EOF
 }
@@ -177,6 +178,16 @@ abort-release [MOD_DIRECTORY_PATH]
   - Drop version tag associated with the release branch.
   - Switch back to main branch.
   - Drop the release branch.
+
+check-updates [MOD_DIRECTORY_PATH]
+
+  Arguments:
+
+    MOD_DIRECTORY_PATH (path to base directory)
+
+  Checks for available dependency updates (listed in the info
+  file). Only dependencies with explicitly listed version are
+  processed.
 
 
 $PROGRAM accepts the following options:
@@ -736,12 +747,12 @@ function command_build() {
 
         if [[ $mod_file_path =~ .*\.lua ]] && ! luac -o /dev/null "$mod_file_path"; then
             (( error_count += 1 ))
-            error "Validation failed for file: $mod_file_path"
+            error "Validation failed for file: $mod_file"
         fi
 
-        if [[ $mod_file_path =~ .*\.json ]] && ! python -m json.tool "$mod_file_path" > /dev/null; then
+        if [[ $mod_file_path =~ .*\.json ]] && ! python3 -m json.tool "$mod_file_path" > /dev/null; then
             (( error_count += 1 ))
-            error "Validation failed for file: $mod_file_path"
+            error "Validation failed for file: $mod_file"
         fi
     done
 
@@ -764,7 +775,7 @@ function command_build() {
 
     # Copy the files.
     for mod_file in "${mod_files[@]}"; do
-        if ! (cd "$base_dir" && install -m 0644 -D "$mod_file" "${target_dir}/${mod_file%%${source_dir}/}"); then
+        if ! (cd "$base_dir" && install -m 0644 -D "$mod_file" "${target_dir}/${mod_file%%"$source_dir"/}"); then
             error "Failed to copy the file: $mod_file"
             return 1
         fi
@@ -898,8 +909,10 @@ function command_release() {
         return 1
     fi
 
-    # Switch back to development version.
-    sed -i -e "s/$version/999.999.999/" "$info_file"
+    # Switch back to development version. Include double quotes in
+    # order to avoid accidental replacement of version strings in
+    # dependencies.
+    sed -i -e "s/\"$version\"/\"999.999.999\"/" "$info_file"
     changelog=$(cat <<EOF
 ---------------------------------------------------------------------------------------------------
 Version: 999.999.999
@@ -985,6 +998,82 @@ function command_abort_release() {
     if ! git -C "$base_dir" branch --delete --force "$release_branch"; then
         error "Failed to remove the release branch."
         return 1
+    fi
+
+    return 0
+}
+
+
+#
+# Checks dependencies for available updates.
+#
+# Arguments:
+#
+#   $1 (base_dir)
+#     Base (top-level) directory with the mod files.
+#
+# Outputs:
+#
+#   List of available dependency updates.
+#
+# Returns:
+#
+#   0 on success, 1 otherwise.
+#
+function command_check_updates() {
+
+    local base_dir="$1"
+
+    local info_file dependency mod_name local_version latest_version mod_info_url mod_info
+
+    local outdated_dependency
+    local outdated_dependencies=()
+
+    info_file=$(get_info_file "$base_dir") || return 1
+
+    # Process dependencies. Only take into account specifcations that include version.
+    while read -r dependency; do
+        # Extracts mod name and version from dependency specification.
+        mod_name=$(echo "$dependency" | grep -E -o '.*(<|<=|=|>=|>)' | sed -E 's/[[:blank:]]*(<|<=|=|>=|>)//;s/^[[:blank:]]*([!?~]|\([?]\))[[:blank:]]*//')
+        local_version=$(echo "$dependency" | grep -E -o "[[:digit:]]+\.[[:digit:]]+\.[[:digit:]]+$")
+
+        [[ $mod_name == "base" ]] && continue
+
+        # Fetch the information from public API. Encode the URL
+        # because some mods have whitespaces in name.
+        mod_info_url="https://mods.factorio.com/api/mods/${mod_name// /%20}"
+        if ! mod_info=$(curl --silent --show-error "$mod_info_url"); then
+            error "Failed to fetch mod information: $mod_name"
+            error "Request URL: $mod_info_url"
+            return 1
+        fi
+
+        latest_version=$(echo "$mod_info" | jq -r '.releases[].version' | sort --version-sort | tail -n1)
+
+        if ! [[ $latest_version =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            error "Failed to extract latest mod version: $mod_name"
+            return 1
+        fi
+
+        # Sort by version, and use the check mode (returns 0 if lines are already sorted).
+        if ! echo -e "$latest_version\n$local_version" | sort --version-sort --check=silent; then
+            outdated_dependency=$(printf "%-48s %8s -> %8s" "$mod_name" "$local_version" "$latest_version")
+            outdated_dependencies+=("$outdated_dependency")
+        fi
+
+    done < <(jq -r ".dependencies[]" "$info_file" | grep -E "(<|<=|=|>=|>)" | sed -e 's/^[[:blank:]]*//;s/[[:blank:]]*$//')
+
+    if (( ${#outdated_dependencies[@]} == 0 )); then
+        success "All listed dependencies are up-to-date."
+    else
+        echo -e "Dependencies with available updates:\n"
+
+        for outdated_dependency in "${outdated_dependencies[@]}"; do
+            echo "  $outdated_dependency"
+        done
+
+        echo
+        warning "Some of the listed dependencies are outdated."
     fi
 
     return 0
@@ -1146,6 +1235,21 @@ elif [[ $COMMAND == abort-release ]]; then
     fi
 
     if ! command_abort_release "$MOD_DIRECTORY_PATH"; then
+        exit "$ERROR_GENERAL"
+    fi
+
+elif [[ $COMMAND == check-updates ]]; then
+
+    MOD_DIRECTORY_PATH="${1:-.}"
+    shift
+
+    # Ensure that passed-in base directory is the repository root.
+    if [[ ! -d $MOD_DIRECTORY_PATH/.git ]]; then
+        error "Passed-in path does not point to base directory of the mod (must contain the .git sub-directory)."
+        exit "$ERROR_ARGUMENTS"
+    fi
+
+    if ! command_check_updates "$MOD_DIRECTORY_PATH"; then
         exit "$ERROR_GENERAL"
     fi
 
