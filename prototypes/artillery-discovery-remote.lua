@@ -63,4 +63,13 @@ local discovery_shortcut = {
   associated_control_input = "give-artillery-discovery-remote"
 }
 
-data:extend({discovery_remote, discovery_flare, discovery_shortcut})
+local discovery_custom_input = {
+    type = "custom-input",
+    name = "give-artillery-discovery-remote",
+    consuming = "game-only",
+    item_to_spawn = "artillery-discovery-remote",
+    action = "spawn-item",
+    key_sequence = "",
+}
+
+data:extend({discovery_remote, discovery_flare, discovery_shortcut, discovery_custom_input})

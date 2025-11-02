@@ -81,6 +81,8 @@ for ammo_category, tint_colour in pairs(ammo_categories) do
 
   local flare_name = "artillery-cluster-flare-" .. ammo_category
   local remote_name = "artillery-cluster-remote-" .. ammo_category
+  local shortcut_name = "give-artillery-cluster-remote-" .. ammo_category
+  local custom_input_name = "give-artillery-cluster-remote-" .. ammo_category
 
   -- Construct localised names and descriptions by "appending" the ammo category to base names.
   local remote_localised_name = {
@@ -100,6 +102,13 @@ for ammo_category, tint_colour in pairs(ammo_categories) do
   local shortcut_localised_name = {
     "",
     {"shortcut-name.make-artillery-cluster-remote"},
+    " (",
+    {"?", {"ammo-category-name." .. ammo_category}, ammo_category},
+    ")"
+  }
+  local custom_input_localised_name = {
+    "",
+    {"controls.give-artillery-cluster-remote"},
     " (",
     {"?", {"ammo-category-name." .. ammo_category}, ammo_category},
     ")"
@@ -174,14 +183,10 @@ for ammo_category, tint_colour in pairs(ammo_categories) do
     drop_sound = artillery_targeting_remote.drop_sound,
   }
 
-  local associated_control_input = nil
-  if ammo_category == "artillery-shell" then
-    associated_control_input = "give-artillery-cluster-remote"
-  end
-
+  -- Cluster shortcut (in the shortcut bar at bottom).
   local cluster_shortcut = {
     type = "shortcut",
-    name = "create-" .. remote_name,
+    name = shortcut_name,
     localised_name = shortcut_localised_name,
     order = "e[spidertron-remote]",
     action = "spawn-item",
@@ -193,11 +198,23 @@ for ammo_category, tint_colour in pairs(ammo_categories) do
     icon_mipmaps = 4,
     small_icons = remote_icons,
     small_icon_size = 32,
-    associated_control_input = associated_control_input
+    associated_control_input = custom_input_name,
+  }
+
+  -- Custom input (keyboard/whatever bindings).
+  local cluster_custom_input = {
+    type = "custom-input",
+    name = custom_input_name,
+    localised_name = custom_input_localised_name,
+    consuming = "game-only",
+    item_to_spawn = remote_name,
+    action = "spawn-item",
+    key_sequence = "",
   }
 
   data:extend({flare})
   data:extend({remote})
   data:extend({cluster_shortcut})
+  data:extend({cluster_custom_input})
 
 end
