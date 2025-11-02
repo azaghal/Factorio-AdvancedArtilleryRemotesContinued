@@ -3,6 +3,8 @@
 -- Copyright (c) 2025 kommade
 -- Provided under MIT license. See LICENSE for details.
 
+-- It is convenient to copy some of the properties from the vanilla artillery targeting remote.
+local artillery_targeting_remote = data.raw["capsule"]["artillery-targeting-remote"]
 
 -- Use two layers for the discovery remote icon in order to allow applying tint to the targeting circle. This way we can
 -- easily define additional discovery remotes for different types of artillery shells that are visually distinct (if
@@ -26,7 +28,6 @@ discovery_flare.icons = discovery_remote_icons
 discovery_flare.icon_size = 64
 discovery_flare.shot_category = "artillery-shell"
 
-
 local discovery_remote = {
   type = "capsule",
   auto_recycle = false,
@@ -41,21 +42,9 @@ local discovery_remote = {
   order = "b[turret]-d[artillery-turret]-ba[remote]",
   flags = { "only-in-cursor", "not-stackable", "spawnable" },
   stack_size = 1,
-  inventory_move_sound = {
-    filename = "__base__/sound/item/artillery-remote-inventory-move.ogg",
-    volume = 0.7,
-    aggregation = {max_count = 1, remove = true},
-  },
-  pick_sound = {
-    filename = "__base__/sound/item/mechanical-inventory-pickup.ogg",
-    volume = 0.8,
-    aggregation = {max_count = 1, remove = true},
-  },
-  drop_sound = {
-    filename = "__base__/sound/item/artillery-remote-inventory-move.ogg",
-    volume = 0.7,
-    aggregation = {max_count = 1, remove = true},
-  },
+  inventory_move_sound = artillery_targeting_remote.inventory_move_sound,
+  pick_sound = artillery_targeting_remote.pick_sound,
+  drop_sound = artillery_targeting_remote.drop_sound,
 }
 
 local discovery_shortcut = {

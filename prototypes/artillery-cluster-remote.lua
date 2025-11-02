@@ -3,6 +3,9 @@
 -- Copyright (c) 2025 kommade
 -- Provided under MIT license. See LICENSE for details.
 
+-- It is convenient to copy some of the properties from the vanilla artillery targeting remote.
+local artillery_targeting_remote = data.raw["capsule"]["artillery-targeting-remote"]
+
 -- Colours used for applying tint on targeting circles, allowing to distinguish between different remotes and targets on
 -- the map. Generated using six-tone algorithm.
 local TINT_COLOURS = {
@@ -166,21 +169,9 @@ for ammo_category, tint_colour in pairs(ammo_categories) do
     order = "b[turret]-d[artillery-turret]-ba[remote]",
     flags = { "only-in-cursor", "not-stackable", "spawnable" },
     stack_size = 1,
-    inventory_move_sound = {
-      filename = "__base__/sound/item/artillery-remote-inventory-move.ogg",
-      volume = 0.7,
-      aggregation = {max_count = 1, remove = true},
-    },
-    pick_sound = {
-      filename = "__base__/sound/item/mechanical-inventory-pickup.ogg",
-      volume = 0.8,
-      aggregation = {max_count = 1, remove = true},
-    },
-    drop_sound = {
-      filename = "__base__/sound/item/artillery-remote-inventory-move.ogg",
-      volume = 0.7,
-      aggregation = {max_count = 1, remove = true},
-    },
+    inventory_move_sound = artillery_targeting_remote.inventory_move_sound,
+    pick_sound = artillery_targeting_remote.pick_sound,
+    drop_sound = artillery_targeting_remote.drop_sound,
   }
 
   local associated_control_input = nil
