@@ -7,6 +7,7 @@ Date: 9999-99-99
   Features:
     - Updated for Factorio 2.0.
     - Advanced artillery remotes can be invoked via custom input.
+    - Confgured overrides are shown alongside defaults when using the /aar-show-damage-radius-defaults console command.
   Bugfixes:
 ---------------------------------------------------------------------------------------------------
 Version: 4.0.3

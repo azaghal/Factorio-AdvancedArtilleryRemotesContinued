@@ -609,13 +609,9 @@ end
 
 --- Calculates the default damage radius for an (artillery) ammo category.
 --
--- The default damage radius is calculated to match the smallest maximum damage range of an ammo within a category. In
--- other words, calculate maximum damage range for each ammo type in an ammo category, then pick the smallest value from
--- those values.
---
--- While this does ensure that no gaps (in terms of damage) will be left when calculating the targets, it will lead to
--- excessive artillery shell use (such as atomic artillery) when the ammo is not split out into separate ammo
--- categories.
+-- Take note that this is normally the largest possible damage radius for all the different projctiles that are tied-in
+-- to the ammo category - which can lead to wonky targeting with smaller damage radius artillery (like when playing with
+-- the Atomic Artillery mod forks).
 --
 -- @param ammo_category string Ammo category (prototype) name.
 --
@@ -623,9 +619,7 @@ end
 --
 function remotes.get_damage_radius_default(ammo_category)
   local ammo_prototypes = prototypes.get_item_filtered( { { filter = "type", type = "ammo" } } )
-
-  -- All calculated radiuses should be smaller than this one.
-  local projectile_damage_radius_minimum = math.huge
+  local projectile_damage_radius_maximum = 0
 
   -- Iterate over all ammo items, and operate only on those that have a matching ammo category.
   for _, ammo_prototype in pairs(ammo_prototypes) do
@@ -651,9 +645,9 @@ function remotes.get_damage_radius_default(ammo_category)
 
             if action_delivery.projectile then
               local projectile_damage_radius = remotes.get_projectile_damage_radius(action_delivery.projectile)
-              projectile_damage_radius_minimum =
-                projectile_damage_radius < projectile_damage_radius_minimum and projectile_damage_radius or
-                projectile_damage_radius_minimum
+              projectile_damage_radius_maximum =
+                projectile_damage_radius > projectile_damage_radius_maximum and projectile_damage_radius or
+                projectile_damage_radius_maximum
             end
 
           end
@@ -665,7 +659,9 @@ function remotes.get_damage_radius_default(ammo_category)
     end
   end
 
-  return projectile_damage_radius_minimum
+  print(projectile_damage_radius_maximum)
+
+  return projectile_damage_radius_maximum
 end
 
 
@@ -702,7 +698,12 @@ function remotes.show_damage_radius_defaults(player)
   local listing = {}
 
   for ammo_category, damage_radius in pairs(storage.ammo_category_damage_radius_defaults) do
-    table.insert(listing, ammo_category .. "=" .. damage_radius)
+    local override = storage.ammo_category_damage_radius_overrides[ammo_category]
+    if override then
+      table.insert(listing, ammo_category .. "=" .. damage_radius .. " (" .. override .. ")")
+    else
+      table.insert(listing, ammo_category .. "=" .. damage_radius)
+    end
   end
 
   player.print({"info.aar-ammo-category-damage-radius-defaults", table.concat(listing, "\n") })

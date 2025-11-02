@@ -12,7 +12,7 @@ commands.show_damage_radius_defaults = {}
 commands.show_damage_radius_defaults.name = "aar-show-damage-radius-defaults"
 commands.show_damage_radius_defaults.help = [[
 
-Lists default damage radius values for each artillery ammo category recognised by the Advanced Artillery Remotes mod. Useful for changing the "Damage radius overrides for cluster targeting" mod setting.
+Lists default damage radius values for each artillery ammo category recognised by the Advanced Artillery Remotes mod. Useful for changing the "Damage radius overrides for cluster targeting" mod setting. Configured overrides (if any) are shown in parenthesis.
 
 Usage:
     /aar-show-damage-radius-defaults
