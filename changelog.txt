@@ -2,7 +2,7 @@
 Version: 999.999.999
 Date: 9999-99-99
   Changes:
-    - Deprecated support for "Shortctus for 1.1" mod has been dropped.
+    - Deprecated support for "Shortcuts" mod has been dropped.
     - Advanced artillery remotes are provided as shortcuts instead of items.
   Features:
     - Updated for Factorio 2.0.
